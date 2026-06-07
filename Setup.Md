@@ -1,0 +1,1 @@
+notificacoes = [$"{DoW} é dia de treinar {membro}, vamos dar aquele gás?", $"{doW} é dia de descanso, mas não esqueça de beeber agua]

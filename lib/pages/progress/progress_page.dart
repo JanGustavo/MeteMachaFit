@@ -1,0 +1,544 @@
+// lib/pages/progress/progress_page.dart
+
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/database/app_database.dart';
+import '../../core/providers/providers.dart';
+import '../../core/theme/app_theme.dart';
+
+class ProgressPage extends ConsumerWidget {
+  const ProgressPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weeklyWeights = ref.watch(weeklyWeightsProvider);
+
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          // ── Header ─────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+              child: Text(
+                'PROGRESSO',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+          ),
+
+          // ── Gráfico de peso corporal ────────────────────────────
+          SliverToBoxAdapter(
+            child: Card(
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionLabel('PESO CORPORAL (kg)'),
+                    const SizedBox(height: 16),
+                    weeklyWeights.when(
+                      data: (weights) => weights.length < 2
+                          ? const _EmptyChart(
+                              msg:
+                                  'Registre seu peso pelo menos 2 semanas\npara ver o gráfico.',
+                            )
+                          : _WeightChart(weights: weights),
+                      loading: () => const _ChartPlaceholder(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Exercícios ─────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      'EXERCÍCIOS',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  const _GroupingSelector(),
+                ],
+              ),
+            ),
+          ),
+
+          const _ExerciseProgressSliver(),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Gráfico de peso corporal ─────────────────────────────────────────────────
+
+class _WeightChart extends StatelessWidget {
+  final List<WeeklyWeight> weights;
+  const _WeightChart({required this.weights});
+
+  @override
+  Widget build(BuildContext context) {
+    final spots = weights
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.peso))
+        .toList();
+
+    final minY = weights.map((w) => w.peso).reduce((a, b) => a < b ? a : b) - 2;
+    final maxY = weights.map((w) => w.peso).reduce((a, b) => a > b ? a : b) + 2;
+
+    return SizedBox(
+      height: 180,
+      child: LineChart(
+        LineChartData(
+          minY: minY,
+          maxY: maxY,
+          gridData: FlGridData(
+            drawHorizontalLine: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) =>
+                const FlLine(color: AppColors.divider, strokeWidth: 1),
+          ),
+          titlesData: FlTitlesData(
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                getTitlesWidget: (v, _) => Text(
+                  v.toStringAsFixed(1),
+                  style:
+                      const TextStyle(color: AppColors.onSurface, fontSize: 10),
+                ),
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 28,
+                getTitlesWidget: (v, _) {
+                  final idx = v.toInt();
+                  if (idx < 0 || idx >= weights.length) return const SizedBox();
+                  final parts = weights[idx].semana.split('-W');
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'W${parts.length > 1 ? parts[1] : '?'}',
+                      style: const TextStyle(
+                          color: AppColors.onSurface, fontSize: 10),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: AppColors.primary,
+              barWidth: 2.5,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  radius: 4,
+                  color: AppColors.primary,
+                  strokeWidth: 2,
+                  strokeColor: AppColors.background,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: AppColors.primary.withOpacity(0.08),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Lista de exercícios com gráfico expansível ───────────────────────────────
+
+class _ExerciseProgressSliver extends ConsumerWidget {
+  const _ExerciseProgressSliver();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reportAsync = ref.watch(progressReportProvider);
+    final grouping = ref.watch(progressGroupingProvider);
+
+    return reportAsync.when(
+      data: (data) {
+        if (data.allTrainedExercises.isEmpty) {
+          return const SliverToBoxAdapter(
+            child: _EmptyChart(
+              msg:
+                  'Conclua alguns treinos para ver\na progressão por exercício.',
+            ),
+          );
+        }
+
+        final List<Widget> listItems = [];
+
+        if (grouping == ProgressGrouping.byMuscle) {
+          data.groupedByMuscle.forEach((group, exercises) {
+            listItems.add(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+                child: Text(
+                  group.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryLight,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            );
+            for (final ex in exercises) {
+              listItems.add(_ExerciseCard(exercise: ex));
+            }
+          });
+        } else {
+          // Agrupamento por Dia de Treino da divisão ativa
+          data.groupedByDay.forEach((day, exercises) {
+            final dayColor = AppColors.getWorkoutColor(day.letra);
+            listItems.add(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 9,
+                      backgroundColor: dayColor,
+                      child: Text(
+                        day.letra,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'DIA ${day.letra} - ${day.nome.toUpperCase()}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: dayColor,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+            for (final ex in exercises) {
+              listItems.add(_ExerciseCard(exercise: ex));
+            }
+          });
+
+          // Se houver exercícios de treinos anteriores ou que não estão na divisão atual:
+          if (data.exercisesWithoutDay.isNotEmpty) {
+            listItems.add(
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 6),
+                child: Text(
+                  'OUTROS / ANTERIORES',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurface,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            );
+            for (final ex in data.exercisesWithoutDay) {
+              listItems.add(_ExerciseCard(exercise: ex));
+            }
+          }
+        }
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (_, i) => listItems[i],
+            childCount: listItems.length,
+          ),
+        );
+      },
+      loading: () => const SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+      error: (err, __) => SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text('Erro ao carregar relatório: $err'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GroupingSelector extends ConsumerWidget {
+  const _GroupingSelector();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final grouping = ref.watch(progressGroupingProvider);
+
+    return SegmentedButton<ProgressGrouping>(
+      style: const ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      segments: const [
+        ButtonSegment<ProgressGrouping>(
+          value: ProgressGrouping.byDay,
+          label: Text('Por Dia', style: TextStyle(fontSize: 12)),
+          icon: Icon(Icons.calendar_today_rounded, size: 14),
+        ),
+        ButtonSegment<ProgressGrouping>(
+          value: ProgressGrouping.byMuscle,
+          label: Text('Por Músculo', style: TextStyle(fontSize: 12)),
+          icon: Icon(Icons.fitness_center_rounded, size: 14),
+        ),
+      ],
+      selected: {grouping},
+      onSelectionChanged: (newSelection) {
+        ref.read(progressGroupingProvider.notifier).state = newSelection.first;
+      },
+    );
+  }
+}
+
+class _ExerciseCard extends ConsumerWidget {
+  final Exercise exercise;
+  const _ExerciseCard({required this.exercise});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        leading: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.fitness_center_rounded,
+              size: 18, color: AppColors.primary),
+        ),
+        title: Text(exercise.nome,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        subtitle: Text(
+          '${exercise.vezesFeito}× realizado · ${exercise.equipamento}',
+          style: const TextStyle(fontSize: 12, color: AppColors.onSurface),
+        ),
+        children: [
+          FutureBuilder<List<ExerciseLog>>(
+            future: ref
+                .read(logDaoProvider)
+                .getLogsForExerciseLastWeeks(exercise.id),
+            builder: (_, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final logs = snap.data ?? [];
+              if (logs.length < 2) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Mais dados necessários para o gráfico.',
+                    style: TextStyle(color: AppColors.onSurface, fontSize: 13),
+                  ),
+                );
+              }
+              return _ExerciseVolumeChart(
+                logs: logs,
+                isUnilateral: exercise.isUnilateral,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExerciseVolumeChart extends StatelessWidget {
+  final List<ExerciseLog> logs;
+  final bool isUnilateral;
+  const _ExerciseVolumeChart({required this.logs, required this.isUnilateral});
+
+  @override
+  Widget build(BuildContext context) {
+    final spots = logs.asMap().entries.map((e) {
+      final vol = LogDao.calcularVolume(e.value, isUnilateral: isUnilateral);
+      return FlSpot(e.key.toDouble(), vol);
+    }).toList();
+
+    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.15;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionLabel('VOLUME (kg × reps)'),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 130,
+          child: LineChart(
+            LineChartData(
+              minY: 0,
+              maxY: maxY,
+              gridData: FlGridData(
+                drawHorizontalLine: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (_) =>
+                    const FlLine(color: AppColors.divider, strokeWidth: 1),
+              ),
+              titlesData: FlTitlesData(
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                bottomTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 36,
+                    getTitlesWidget: (v, _) => Text(
+                      v.toStringAsFixed(0),
+                      style: const TextStyle(
+                          color: AppColors.onSurface, fontSize: 9),
+                    ),
+                  ),
+                ),
+              ),
+              borderData: FlBorderData(show: false),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: true,
+                  color: AppColors.primary,
+                  barWidth: 2,
+                  dotData: FlDotData(
+                    show: true,
+                    getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                      radius: 3,
+                      color: AppColors.primary,
+                      strokeWidth: 1.5,
+                      strokeColor: AppColors.background,
+                    ),
+                  ),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: AppColors.primary.withOpacity(0.07),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isUnilateral)
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text(
+              '* Volume bilateral: peso × reps × 2',
+              style: TextStyle(color: AppColors.onSurface, fontSize: 11),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.onSurface,
+        fontSize: 10,
+        letterSpacing: 1.5,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class _EmptyChart extends StatelessWidget {
+  final String msg;
+  const _EmptyChart({required this.msg});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      child: Center(
+        child: Text(
+          msg,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.onSurface, height: 1.6),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChartPlaceholder extends StatelessWidget {
+  const _ChartPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 180,
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+}

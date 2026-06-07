@@ -1,0 +1,43 @@
+name: gym_tracker
+description: Gym workout tracker – sem backend, sem Firebase, só SQLite.
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── Database cross-platform (mobile = SQLite nativo, web = WASM) ──
+  drift: ^2.20.3
+  drift_flutter: ^0.2.4          # substitui sqflite; funciona na web
+  sqlite3_flutter_libs: ^0.5.28  # binários nativos para Android/iOS
+
+  # ── State management ──────────────────────────────────────────────
+  flutter_riverpod: ^2.5.1
+
+  # ── Charts ────────────────────────────────────────────────────────
+  fl_chart: ^0.68.0
+
+  # ── Audio ─────────────────────────────────────────────────────────
+  audioplayers: ^6.1.0
+
+  # ── Utils ─────────────────────────────────────────────────────────
+  intl: ^0.19.0
+  url_launcher: ^6.3.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  drift_dev: ^2.20.3
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/sounds/

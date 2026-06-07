@@ -1,0 +1,169 @@
+// lib/core/providers/providers.dart
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../database/app_database.dart';
+import '../utils/week_utils.dart';
+
+// ── Database ──────────────────────────────────────────────────────────────────
+
+final databaseProvider = Provider<AppDatabase>((ref) {
+  final db = AppDatabase();
+  ref.onDispose(db.close);
+  return db;
+});
+
+// ── DAOs ──────────────────────────────────────────────────────────────────────
+
+final exerciseDaoProvider = Provider<ExerciseDao>(
+  (ref) => ref.watch(databaseProvider).exerciseDao,
+);
+
+final workoutDaoProvider = Provider<WorkoutDao>(
+  (ref) => ref.watch(databaseProvider).workoutDao,
+);
+
+final logDaoProvider = Provider<LogDao>(
+  (ref) => ref.watch(databaseProvider).logDao,
+);
+
+final profileDaoProvider = Provider<ProfileDao>(
+  (ref) => ref.watch(databaseProvider).profileDao,
+);
+
+// ── Stream providers ──────────────────────────────────────────────────────────
+
+/// Todos os splits cadastrados
+final splitsProvider = StreamProvider<List<WorkoutSplit>>(
+  (ref) => ref.watch(workoutDaoProvider).watchSplits(),
+);
+
+/// Divisão atualmente ativa (null se nenhuma)
+final activeSplitProvider = StreamProvider<WorkoutSplit?>((ref) {
+  return ref.watch(workoutDaoProvider).watchSplits().map((splits) {
+    try {
+      return splits.firstWhere((s) => s.ativo);
+    } catch (_) {
+      return null;
+    }
+  });
+});
+
+/// Dias da divisão ativa, em ordem de letra
+final activeSplitDaysProvider = StreamProvider<List<WorkoutDay>>((ref) {
+  final splitAsync = ref.watch(activeSplitProvider);
+  return splitAsync.when(
+    data: (split) {
+      if (split == null) return Stream.value([]);
+      return ref.watch(workoutDaoProvider).watchDaysForSplit(split.id);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
+});
+
+/// Sessões recentes (stream)
+final recentSessionsProvider = StreamProvider<List<WorkoutSession>>(
+  (ref) => ref.watch(workoutDaoProvider).watchRecentSessions(),
+);
+
+/// Sessão em andamento (null se não há nenhuma)
+final activeSessionProvider = StreamProvider<WorkoutSession?>(
+  (ref) => ref.watch(workoutDaoProvider).watchActiveSession(),
+);
+
+/// Perfil do usuário
+final profileProvider = StreamProvider<UserProfile?>(
+  (ref) => ref.watch(profileDaoProvider).watchProfile(),
+);
+
+/// Histórico de pesos semanais
+final weeklyWeightsProvider = StreamProvider<List<WeeklyWeight>>(
+  (ref) => ref.watch(profileDaoProvider).watchWeeklyWeights(),
+);
+
+/// Planejamento semanal
+final weeklyScheduleProvider = StreamProvider<List<WeeklySchedule>>(
+  (ref) => ref.watch(workoutDaoProvider).watchWeeklySchedule(),
+);
+
+// ── Derived / Future providers ─────────────────────────────────────────────────
+
+/// true  → peso da semana já registrado
+/// false → banner de lembrete deve aparecer
+final weeklyWeightRegisteredProvider = FutureProvider<bool>((ref) async {
+  // Depende do stream para re-executar quando um peso for salvo
+  ref.watch(weeklyWeightsProvider);
+  final dao = ref.read(profileDaoProvider);
+  final weight = await dao.getWeightForWeek(WeekUtils.currentWeekKey());
+  return weight != null;
+});
+
+/// Todos os exercícios ordenados por grupo muscular
+final allExercisesProvider = StreamProvider<List<Exercise>>(
+  (ref) => ref.watch(exerciseDaoProvider).watchAll(),
+);
+
+enum ProgressGrouping {
+  byDay,
+  byMuscle,
+}
+
+final progressGroupingProvider = StateProvider<ProgressGrouping>((ref) => ProgressGrouping.byDay);
+
+class ProgressReportData {
+  final List<Exercise> allTrainedExercises;
+  final Map<String, List<Exercise>> groupedByMuscle;
+  final Map<WorkoutDay, List<Exercise>> groupedByDay;
+  final List<Exercise> exercisesWithoutDay;
+
+  ProgressReportData({
+    required this.allTrainedExercises,
+    required this.groupedByMuscle,
+    required this.groupedByDay,
+    required this.exercisesWithoutDay,
+  });
+}
+
+final progressReportProvider = FutureProvider<ProgressReportData>((ref) async {
+  final allExercisesAsync = ref.watch(allExercisesProvider);
+  final allExercises = allExercisesAsync.value ?? [];
+  final trained = allExercises.where((e) => e.vezesFeito > 0).toList();
+
+  // 1. Agrupar por grupo muscular
+  final Map<String, List<Exercise>> groupedByMuscle = {};
+  for (final ex in trained) {
+    groupedByMuscle.putIfAbsent(ex.grupoMuscular, () => []).add(ex);
+  }
+
+  // 2. Agrupar por dia da divisão ativa
+  final activeDaysAsync = ref.watch(activeSplitDaysProvider);
+  final activeDays = activeDaysAsync.value ?? [];
+
+  final Map<WorkoutDay, List<Exercise>> groupedByDay = {};
+  final Set<int> exerciseIdsInActiveDays = {};
+
+  final exerciseDao = ref.read(exerciseDaoProvider);
+  for (final day in activeDays) {
+    final dayExercises = await exerciseDao.getExercisesForDay(day.id);
+    final trainedDayExercises = dayExercises.where((e) => e.vezesFeito > 0).toList();
+    if (trainedDayExercises.isNotEmpty) {
+      groupedByDay[day] = trainedDayExercises;
+      for (final ex in trainedDayExercises) {
+        exerciseIdsInActiveDays.add(ex.id);
+      }
+    }
+  }
+
+  // Exercícios treinados que não estão em nenhum dia da divisão ativa
+  final exercisesWithoutDay = trained
+      .where((ex) => !exerciseIdsInActiveDays.contains(ex.id))
+      .toList();
+
+  return ProgressReportData(
+    allTrainedExercises: trained,
+    groupedByMuscle: groupedByMuscle,
+    groupedByDay: groupedByDay,
+    exercisesWithoutDay: exercisesWithoutDay,
+  );
+});
+
