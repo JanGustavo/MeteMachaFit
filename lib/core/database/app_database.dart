@@ -763,13 +763,18 @@ class AppDatabase extends _$AppDatabase {
           await _seedDatabase(this);
         },
         onUpgrade: (m, from, to) async {
-          if (from < 4) {
+          if (from < 3) {
             // Recria todas as tabelas para garantir compatibilidade com as novas colunas e nomes de tabelas
+            await customStatement('PRAGMA foreign_keys = OFF;');
             for (final table in allTables) {
               await m.drop(table);
             }
             await m.createAll();
             await _seedDatabase(this);
+            await customStatement('PRAGMA foreign_keys = ON;');
+          } else if (from < 4) {
+            // Apenas adiciona a coluna de volume sem perder os dados do usuário
+            await m.addColumn(exercises, exercises.volume);
           }
         },
       );
