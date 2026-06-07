@@ -777,6 +777,13 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(exercises, exercises.volume);
           }
         },
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON;');
+          final allExs = await select(exercises).get();
+          if (allExs.isEmpty) {
+            await _seedDatabase(this);
+          }
+        },
       );
 
   static QueryExecutor _openConnection() {

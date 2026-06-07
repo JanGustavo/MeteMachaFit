@@ -103,7 +103,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         // Avatar / ícone
                         CircleAvatar(
                           radius: 36,
-                          backgroundColor: AppColors.primary.withOpacity(0.12),
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                           child: const Icon(
                             Icons.person_rounded,
                             size: 36,
@@ -277,9 +277,9 @@ class _Imc extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: cor.withOpacity(0.08),
+        color: cor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cor.withOpacity(0.25)),
+        border: Border.all(color: cor.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -292,7 +292,7 @@ class _Imc extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '· $classe',
-            style: TextStyle(color: cor.withOpacity(0.8), fontSize: 13),
+            style: TextStyle(color: cor.withValues(alpha: 0.8), fontSize: 13),
           ),
         ],
       ),
@@ -313,7 +313,7 @@ class _WeightRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: isCurrentWeek
-              ? AppColors.primary.withOpacity(0.4)
+              ? AppColors.primary.withValues(alpha: 0.4)
               : AppColors.divider,
         ),
       ),

@@ -15,10 +15,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/constants/equipment_options.dart';
 import '../../core/providers/providers.dart';
 import '../../core/services/audio_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/week_utils.dart';
+//import '../setup/widgets/setup_page.dart';
 
 // Registro local de uma série (exibição imediata, sem roundtrip)
 class _SetEntry {
@@ -495,8 +497,14 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                   const SizedBox(height: 8),
                   SegmentedButton<bool>(
                     segments: const [
-                      ButtonSegment(value: false, label: Text('Bilateral'), icon: Icon(Icons.people_rounded)),
-                      ButtonSegment(value: true, label: Text('Unilateral'), icon: Icon(Icons.person_rounded)),
+                      ButtonSegment(
+                          value: false,
+                          label: Text('Bilateral'),
+                          icon: Icon(Icons.people_rounded)),
+                      ButtonSegment(
+                          value: true,
+                          label: Text('Unilateral'),
+                          icon: Icon(Icons.person_rounded)),
                     ],
                     selected: {_executandoUnilateral},
                     onSelectionChanged: (v) {
@@ -549,18 +557,18 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                   DropdownButtonFormField<String>(
                     value: _equipamentoSelecionado,
                     decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     dropdownColor: AppColors.card,
-                    items: const [
-                      DropdownMenuItem(value: 'Livre', child: Text('Livre')),
-                      DropdownMenuItem(value: 'Barra', child: Text('Barra')),
-                      DropdownMenuItem(value: 'Haltere', child: Text('Haltere')),
-                      DropdownMenuItem(value: 'Cabo', child: Text('Cabo')),
-                      DropdownMenuItem(value: 'Máquina', child: Text('Máquina')),
-                      DropdownMenuItem(value: 'Peso Corporal', child: Text('Peso Corporal')),
-                      DropdownMenuItem(value: 'Smith', child: Text('Smith')),
-                    ],
+                    items: equipmentOptions
+                        .map(
+                          (option) => DropdownMenuItem(
+                            value: option,
+                            child: Text(option),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (val) {
                       setState(() {
                         _equipamentoSelecionado = val;
@@ -703,7 +711,8 @@ class _PreviousPerformance extends StatelessWidget {
             runSpacing: 4,
             children: logs.map((l) {
               final ladoStr = (l.lado != 'ambos') ? ' (${l.lado})' : '';
-              final eqStr = (l.equipamento != null && l.equipamento != exercise.equipamento)
+              final eqStr = (l.equipamento != null &&
+                      l.equipamento != exercise.equipamento)
                   ? ' [${l.equipamento}]'
                   : '';
               return Container(
@@ -762,7 +771,8 @@ class _SetsList extends StatelessWidget {
             runSpacing: 4,
             children: sets.map((s) {
               final ladoStr = (s.lado != 'ambos') ? ' (${s.lado})' : '';
-              final eqStr = (s.equipamento != null && s.equipamento != exercise.equipamento)
+              final eqStr = (s.equipamento != null &&
+                      s.equipamento != exercise.equipamento)
                   ? ' [${s.equipamento}]'
                   : '';
               return Container(
