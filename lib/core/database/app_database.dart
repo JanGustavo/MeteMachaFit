@@ -40,6 +40,9 @@ class Exercises extends Table {
   /// Tempo de descanso padrão em segundos (padrão 90s)
   IntColumn get tempoDescansoSegundos => integer().withDefault(const Constant(90))();
 
+  /// Volume recomendado (ex: "3x12")
+  TextColumn get volume => text().nullable()();
+
   /// Incrementado a cada sessão concluída (não a cada série).
   IntColumn get vezesFeito => integer().withDefault(const Constant(0))();
 }
@@ -751,7 +754,7 @@ class AppDatabase extends _$AppDatabase {
   late final ProfileDao profileDao = ProfileDao(this);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -760,7 +763,7 @@ class AppDatabase extends _$AppDatabase {
           await _seedDatabase(this);
         },
         onUpgrade: (m, from, to) async {
-          if (from < 3) {
+          if (from < 4) {
             // Recria todas as tabelas para garantir compatibilidade com as novas colunas e nomes de tabelas
             for (final table in allTables) {
               await m.drop(table);

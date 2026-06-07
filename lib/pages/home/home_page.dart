@@ -555,7 +555,7 @@ class _DayListTile extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              ex.grupoMuscular,
+                              '${ex.grupoMuscular} \u00b7 ${ex.equipamento}${ex.volume != null && ex.volume!.isNotEmpty ? ' \u00b7 ${ex.volume}' : ''}',
                               style: const TextStyle(
                                   color: AppColors.onSurface, fontSize: 11),
                             ),

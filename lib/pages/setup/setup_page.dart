@@ -140,7 +140,7 @@ class _ExercisesSetupTab extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${ex.equipamento} \u00b7 ${ex.tempoDescansoSegundos}s descanso${ex.isUnilateral ? ' \u00b7 Unilateral' : ''}',
+                                '${ex.equipamento}${ex.volume != null && ex.volume!.isNotEmpty ? ' \u00b7 ${ex.volume}' : ''} \u00b7 ${ex.tempoDescansoSegundos}s descanso${ex.isUnilateral ? ' \u00b7 Unilateral' : ''}',
                                 style: const TextStyle(fontSize: 12, color: AppColors.onSurface),
                               ),
                               if (ex.link != null && ex.link!.isNotEmpty) ...[
@@ -412,7 +412,7 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${ex.grupoMuscular} \u00b7 ${ex.equipamento} \u00b7 ${ex.tempoDescansoSegundos}s descanso${ex.isUnilateral ? ' \u00b7 Unilateral' : ''}',
+                                '${ex.grupoMuscular} \u00b7 ${ex.equipamento}${ex.volume != null && ex.volume!.isNotEmpty ? ' \u00b7 ${ex.volume}' : ''} \u00b7 ${ex.tempoDescansoSegundos}s descanso${ex.isUnilateral ? ' \u00b7 Unilateral' : ''}',
                                 style: const TextStyle(fontSize: 12, color: AppColors.onSurface),
                               ),
                               if (ex.link != null && ex.link!.isNotEmpty) ...[
@@ -565,7 +565,8 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
                       final ex = unlinked[index];
                       return ListTile(
                         title: Text(ex.nome, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text('${ex.grupoMuscular} \u00b7 ${ex.equipamento}'),
+                        subtitle: Text(
+                            '${ex.grupoMuscular} \u00b7 ${ex.equipamento}${ex.volume != null && ex.volume!.isNotEmpty ? ' \u00b7 ${ex.volume}' : ''}'),
                         trailing: ex.link != null
                             ? const Icon(Icons.play_circle_fill_rounded, color: AppColors.warning, size: 20)
                             : null,
@@ -636,6 +637,7 @@ void _showAddExerciseSheet(
   final restCtrl = TextEditingController(
       text: exercise?.tempoDescansoSegundos.toString() ?? '90');
   final linkCtrl = TextEditingController(text: exercise?.link ?? '');
+  final volumeCtrl = TextEditingController(text: exercise?.volume ?? '');
   String group = exercise?.grupoMuscular ?? 'Peito';
   String equipment = exercise?.equipamento ?? 'Livre';
   bool unilateral = exercise?.isUnilateral ?? false;
@@ -707,6 +709,14 @@ void _showAddExerciseSheet(
                 ),
               ),
               const SizedBox(height: 12),
+              TextField(
+                controller: volumeCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Volume Alvo (ex: 3x12)',
+                  hintText: '3x12',
+                ),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -736,6 +746,8 @@ void _showAddExerciseSheet(
                     final rest = int.tryParse(restCtrl.text) ?? 90;
                     final link = linkCtrl.text.trim();
                     final linkVal = link.isEmpty ? null : link;
+                    final volume = volumeCtrl.text.trim();
+                    final volumeVal = volume.isEmpty ? null : volume;
                     if (name.isEmpty) return;
 
                     int savedId;
@@ -748,6 +760,7 @@ void _showAddExerciseSheet(
                               isUnilateral: Value(unilateral),
                               tempoDescansoSegundos: Value(rest),
                               link: Value(linkVal),
+                              volume: Value(volumeVal),
                               vezesFeito: const Value(0),
                             ),
                           );
@@ -761,6 +774,7 @@ void _showAddExerciseSheet(
                               isUnilateral: unilateral,
                               tempoDescansoSegundos: rest,
                               link: linkVal,
+                              volume: volumeVal,
                               vezesFeito: exercise.vezesFeito,
                             ),
                           );

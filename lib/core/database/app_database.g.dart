@@ -142,6 +142,11 @@ class $ExercisesTable extends Exercises
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(90));
+  static const VerificationMeta _volumeMeta = const VerificationMeta('volume');
+  @override
+  late final GeneratedColumn<String> volume = GeneratedColumn<String>(
+      'volume', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _vezesFeitoMeta =
       const VerificationMeta('vezesFeito');
   @override
@@ -159,6 +164,7 @@ class $ExercisesTable extends Exercises
         isUnilateral,
         equipamento,
         tempoDescansoSegundos,
+        volume,
         vezesFeito
       ];
   @override
@@ -210,6 +216,10 @@ class $ExercisesTable extends Exercises
           tempoDescansoSegundos.isAcceptableOrUnknown(
               data['tempo_descanso_segundos']!, _tempoDescansoSegundosMeta));
     }
+    if (data.containsKey('volume')) {
+      context.handle(_volumeMeta,
+          volume.isAcceptableOrUnknown(data['volume']!, _volumeMeta));
+    }
     if (data.containsKey('vezes_feito')) {
       context.handle(
           _vezesFeitoMeta,
@@ -239,6 +249,8 @@ class $ExercisesTable extends Exercises
           .read(DriftSqlType.string, data['${effectivePrefix}equipamento'])!,
       tempoDescansoSegundos: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}tempo_descanso_segundos'])!,
+      volume: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}volume']),
       vezesFeito: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}vezes_feito'])!,
     );
@@ -270,6 +282,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   /// Tempo de descanso padrão em segundos (padrão 90s)
   final int tempoDescansoSegundos;
 
+  /// Volume recomendado (ex: "3x12")
+  final String? volume;
+
   /// Incrementado a cada sessão concluída (não a cada série).
   final int vezesFeito;
   const Exercise(
@@ -280,6 +295,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       required this.isUnilateral,
       required this.equipamento,
       required this.tempoDescansoSegundos,
+      this.volume,
       required this.vezesFeito});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -293,6 +309,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     map['is_unilateral'] = Variable<bool>(isUnilateral);
     map['equipamento'] = Variable<String>(equipamento);
     map['tempo_descanso_segundos'] = Variable<int>(tempoDescansoSegundos);
+    if (!nullToAbsent || volume != null) {
+      map['volume'] = Variable<String>(volume);
+    }
     map['vezes_feito'] = Variable<int>(vezesFeito);
     return map;
   }
@@ -306,6 +325,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       isUnilateral: Value(isUnilateral),
       equipamento: Value(equipamento),
       tempoDescansoSegundos: Value(tempoDescansoSegundos),
+      volume:
+          volume == null && nullToAbsent ? const Value.absent() : Value(volume),
       vezesFeito: Value(vezesFeito),
     );
   }
@@ -322,6 +343,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       equipamento: serializer.fromJson<String>(json['equipamento']),
       tempoDescansoSegundos:
           serializer.fromJson<int>(json['tempoDescansoSegundos']),
+      volume: serializer.fromJson<String?>(json['volume']),
       vezesFeito: serializer.fromJson<int>(json['vezesFeito']),
     );
   }
@@ -336,6 +358,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'isUnilateral': serializer.toJson<bool>(isUnilateral),
       'equipamento': serializer.toJson<String>(equipamento),
       'tempoDescansoSegundos': serializer.toJson<int>(tempoDescansoSegundos),
+      'volume': serializer.toJson<String?>(volume),
       'vezesFeito': serializer.toJson<int>(vezesFeito),
     };
   }
@@ -348,6 +371,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           bool? isUnilateral,
           String? equipamento,
           int? tempoDescansoSegundos,
+          Value<String?> volume = const Value.absent(),
           int? vezesFeito}) =>
       Exercise(
         id: id ?? this.id,
@@ -358,6 +382,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
         equipamento: equipamento ?? this.equipamento,
         tempoDescansoSegundos:
             tempoDescansoSegundos ?? this.tempoDescansoSegundos,
+        volume: volume.present ? volume.value : this.volume,
         vezesFeito: vezesFeito ?? this.vezesFeito,
       );
   Exercise copyWithCompanion(ExercisesCompanion data) {
@@ -376,6 +401,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       tempoDescansoSegundos: data.tempoDescansoSegundos.present
           ? data.tempoDescansoSegundos.value
           : this.tempoDescansoSegundos,
+      volume: data.volume.present ? data.volume.value : this.volume,
       vezesFeito:
           data.vezesFeito.present ? data.vezesFeito.value : this.vezesFeito,
     );
@@ -391,6 +417,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('isUnilateral: $isUnilateral, ')
           ..write('equipamento: $equipamento, ')
           ..write('tempoDescansoSegundos: $tempoDescansoSegundos, ')
+          ..write('volume: $volume, ')
           ..write('vezesFeito: $vezesFeito')
           ..write(')'))
         .toString();
@@ -398,7 +425,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
 
   @override
   int get hashCode => Object.hash(id, nome, grupoMuscular, link, isUnilateral,
-      equipamento, tempoDescansoSegundos, vezesFeito);
+      equipamento, tempoDescansoSegundos, volume, vezesFeito);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -410,6 +437,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.isUnilateral == this.isUnilateral &&
           other.equipamento == this.equipamento &&
           other.tempoDescansoSegundos == this.tempoDescansoSegundos &&
+          other.volume == this.volume &&
           other.vezesFeito == this.vezesFeito);
 }
 
@@ -421,6 +449,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<bool> isUnilateral;
   final Value<String> equipamento;
   final Value<int> tempoDescansoSegundos;
+  final Value<String?> volume;
   final Value<int> vezesFeito;
   const ExercisesCompanion({
     this.id = const Value.absent(),
@@ -430,6 +459,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.isUnilateral = const Value.absent(),
     this.equipamento = const Value.absent(),
     this.tempoDescansoSegundos = const Value.absent(),
+    this.volume = const Value.absent(),
     this.vezesFeito = const Value.absent(),
   });
   ExercisesCompanion.insert({
@@ -440,6 +470,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.isUnilateral = const Value.absent(),
     this.equipamento = const Value.absent(),
     this.tempoDescansoSegundos = const Value.absent(),
+    this.volume = const Value.absent(),
     this.vezesFeito = const Value.absent(),
   })  : nome = Value(nome),
         grupoMuscular = Value(grupoMuscular);
@@ -451,6 +482,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<bool>? isUnilateral,
     Expression<String>? equipamento,
     Expression<int>? tempoDescansoSegundos,
+    Expression<String>? volume,
     Expression<int>? vezesFeito,
   }) {
     return RawValuesInsertable({
@@ -462,6 +494,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (equipamento != null) 'equipamento': equipamento,
       if (tempoDescansoSegundos != null)
         'tempo_descanso_segundos': tempoDescansoSegundos,
+      if (volume != null) 'volume': volume,
       if (vezesFeito != null) 'vezes_feito': vezesFeito,
     });
   }
@@ -474,6 +507,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       Value<bool>? isUnilateral,
       Value<String>? equipamento,
       Value<int>? tempoDescansoSegundos,
+      Value<String?>? volume,
       Value<int>? vezesFeito}) {
     return ExercisesCompanion(
       id: id ?? this.id,
@@ -484,6 +518,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       equipamento: equipamento ?? this.equipamento,
       tempoDescansoSegundos:
           tempoDescansoSegundos ?? this.tempoDescansoSegundos,
+      volume: volume ?? this.volume,
       vezesFeito: vezesFeito ?? this.vezesFeito,
     );
   }
@@ -513,6 +548,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       map['tempo_descanso_segundos'] =
           Variable<int>(tempoDescansoSegundos.value);
     }
+    if (volume.present) {
+      map['volume'] = Variable<String>(volume.value);
+    }
     if (vezesFeito.present) {
       map['vezes_feito'] = Variable<int>(vezesFeito.value);
     }
@@ -529,6 +567,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('isUnilateral: $isUnilateral, ')
           ..write('equipamento: $equipamento, ')
           ..write('tempoDescansoSegundos: $tempoDescansoSegundos, ')
+          ..write('volume: $volume, ')
           ..write('vezesFeito: $vezesFeito')
           ..write(')'))
         .toString();
@@ -2939,6 +2978,7 @@ typedef $$ExercisesTableCreateCompanionBuilder = ExercisesCompanion Function({
   Value<bool> isUnilateral,
   Value<String> equipamento,
   Value<int> tempoDescansoSegundos,
+  Value<String?> volume,
   Value<int> vezesFeito,
 });
 typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
@@ -2949,6 +2989,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
   Value<bool> isUnilateral,
   Value<String> equipamento,
   Value<int> tempoDescansoSegundos,
+  Value<String?> volume,
   Value<int> vezesFeito,
 });
 
@@ -3020,6 +3061,9 @@ class $$ExercisesTableFilterComposer
   ColumnFilters<int> get tempoDescansoSegundos => $composableBuilder(
       column: $table.tempoDescansoSegundos,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get volume => $composableBuilder(
+      column: $table.volume, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get vezesFeito => $composableBuilder(
       column: $table.vezesFeito, builder: (column) => ColumnFilters(column));
@@ -3100,6 +3144,9 @@ class $$ExercisesTableOrderingComposer
       column: $table.tempoDescansoSegundos,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get volume => $composableBuilder(
+      column: $table.volume, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get vezesFeito => $composableBuilder(
       column: $table.vezesFeito, builder: (column) => ColumnOrderings(column));
 }
@@ -3133,6 +3180,9 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<int> get tempoDescansoSegundos => $composableBuilder(
       column: $table.tempoDescansoSegundos, builder: (column) => column);
+
+  GeneratedColumn<String> get volume =>
+      $composableBuilder(column: $table.volume, builder: (column) => column);
 
   GeneratedColumn<int> get vezesFeito => $composableBuilder(
       column: $table.vezesFeito, builder: (column) => column);
@@ -3213,6 +3263,7 @@ class $$ExercisesTableTableManager extends RootTableManager<
             Value<bool> isUnilateral = const Value.absent(),
             Value<String> equipamento = const Value.absent(),
             Value<int> tempoDescansoSegundos = const Value.absent(),
+            Value<String?> volume = const Value.absent(),
             Value<int> vezesFeito = const Value.absent(),
           }) =>
               ExercisesCompanion(
@@ -3223,6 +3274,7 @@ class $$ExercisesTableTableManager extends RootTableManager<
             isUnilateral: isUnilateral,
             equipamento: equipamento,
             tempoDescansoSegundos: tempoDescansoSegundos,
+            volume: volume,
             vezesFeito: vezesFeito,
           ),
           createCompanionCallback: ({
@@ -3233,6 +3285,7 @@ class $$ExercisesTableTableManager extends RootTableManager<
             Value<bool> isUnilateral = const Value.absent(),
             Value<String> equipamento = const Value.absent(),
             Value<int> tempoDescansoSegundos = const Value.absent(),
+            Value<String?> volume = const Value.absent(),
             Value<int> vezesFeito = const Value.absent(),
           }) =>
               ExercisesCompanion.insert(
@@ -3243,6 +3296,7 @@ class $$ExercisesTableTableManager extends RootTableManager<
             isUnilateral: isUnilateral,
             equipamento: equipamento,
             tempoDescansoSegundos: tempoDescansoSegundos,
+            volume: volume,
             vezesFeito: vezesFeito,
           ),
           withReferenceMapper: (p0) => p0

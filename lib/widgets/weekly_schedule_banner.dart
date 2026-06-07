@@ -90,8 +90,8 @@ class WeeklyScheduleBanner extends ConsumerWidget {
                       gradient: LinearGradient(
                         colors: hasWorkout
                             ? [
-                                AppColors.getWorkoutColor(assignedDay.letra).withOpacity(0.9),
-                                AppColors.getWorkoutColor(assignedDay.letra).withOpacity(0.6),
+                                AppColors.getWorkoutColor(assignedDay.letra).withValues(alpha: 0.9),
+                                AppColors.getWorkoutColor(assignedDay.letra).withValues(alpha: 0.6),
                               ]
                             : [
                                 Colors.blueGrey.shade800,
@@ -106,7 +106,7 @@ class WeeklyScheduleBanner extends ConsumerWidget {
                           color: (hasWorkout
                                   ? AppColors.getWorkoutColor(assignedDay.letra)
                                   : Colors.black)
-                              .withOpacity(0.25),
+                              .withValues(alpha: 0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

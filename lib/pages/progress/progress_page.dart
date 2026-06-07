@@ -370,7 +370,7 @@ class _ExerciseCard extends ConsumerWidget {
         title: Text(exercise.nome,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         subtitle: Text(
-          '${exercise.vezesFeito}× realizado · ${exercise.equipamento}',
+          '${exercise.vezesFeito}× realizado · ${exercise.equipamento}${exercise.volume != null && exercise.volume!.isNotEmpty ? ' · ${exercise.volume}' : ''}',
           style: const TextStyle(fontSize: 12, color: AppColors.onSurface),
         ),
         children: [

@@ -417,6 +417,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         const SizedBox(width: 6),
                         _Chip(ex.equipamento),
                       ],
+                      if (ex.volume != null && ex.volume!.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        _Chip(ex.volume!),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
