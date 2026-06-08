@@ -231,6 +231,8 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+
+
   // ── Day exercise links ──────────────────────────────────────────
 
   Future<int> linkExerciseToDay(WorkoutDayExercisesCompanion entry) =>
@@ -358,6 +360,15 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase> with _$WorkoutDaoMixin {
   Future<void> deleteSplit(int splitId) async {
     await transaction(() async {
       final days = await (select(workoutDays)..where((d) => d.splitId.equals(splitId))).get();
+      final dayIds = days.map((d) => d.id).toList();
+
+      if (dayIds.isNotEmpty) {
+        // Remove referências a estes dias no planejamento semanal
+        await (update(weeklySchedules)..where((s) => s.dayId.isIn(dayIds))).write(
+          const WeeklySchedulesCompanion(dayId: Value(null)),
+        );
+      }
+
       for (final day in days) {
         final sessions = await (select(workoutSessions)..where((s) => s.dayId.equals(day.id))).get();
         for (final session in sessions) {
@@ -757,6 +768,7 @@ class ProfileDao {
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+  AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   late final ProfileDao profileDao = ProfileDao(this);
 
