@@ -119,16 +119,30 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     // Busca desempenho do último treino para pré-preencher os campos
     final prev = await ref.read(logDaoProvider).getLastLogsForExercise(ex.id);
 
+    // Busca logs já realizados na sessão atual para este exercício
+    final currentLogs = await ref.read(logDaoProvider).getLogsForSession(widget.sessionId);
+    final exerciseSessionLogs = currentLogs.where((l) => l.exerciseId == ex.id).toList();
+
     setState(() {
       _prevLogs = prev;
-      _currentSerie = 1;
+      _currentSerie = exerciseSessionLogs.length + 1;
       _setsLogged.clear();
+      _setsLogged.addAll(exerciseSessionLogs.map((l) => _SetEntry(
+            serie: l.serie,
+            peso: l.peso,
+            reps: l.repeticoes,
+            lado: l.lado,
+            equipamento: l.equipamento,
+          )));
       _lado = 'ambos';
       _restTotal = ex.tempoDescansoSegundos;
       _executandoUnilateral = ex.isUnilateral;
       _equipamentoSelecionado = ex.equipamento;
 
-      if (prev.isNotEmpty) {
+      if (exerciseSessionLogs.isNotEmpty) {
+        _pesoCtrl.text = exerciseSessionLogs.last.peso.toString();
+        _repsCtrl.text = exerciseSessionLogs.last.repeticoes.toString();
+      } else if (prev.isNotEmpty) {
         _pesoCtrl.text = prev.last.peso.toString();
         _repsCtrl.text = prev.last.repeticoes.toString();
       } else {
@@ -237,7 +251,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     _restTimer?.cancel();
 
     if (_isLast) {
-      await _finalizarTreino();
+      await _confirmarFinalizarTreino();
     } else {
       setState(() {
         _currentIndex++;
@@ -249,15 +263,117 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
 
   Future<void> _pularExercicio() async {
     _restTimer?.cancel();
-    if (_isLast) {
-      await _finalizarTreino();
-    } else {
-      setState(() {
-        _currentIndex++;
-        _resting = false;
-      });
-      await _loadExerciseContext();
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % _exercises.length;
+      _resting = false;
+    });
+    await _loadExerciseContext();
+  }
+
+  Future<void> _confirmarFinalizarTreino() async {
+    final logDao = ref.read(logDaoProvider);
+    final currentLogs = await logDao.getLogsForSession(widget.sessionId);
+    final completedIds = currentLogs.map((l) => l.exerciseId).toSet();
+
+    final List<MapEntry<int, Exercise>> uncompleted = [];
+    for (int i = 0; i < _exercises.length; i++) {
+      final ex = _exercises[i];
+      if (!completedIds.contains(ex.id)) {
+        uncompleted.add(MapEntry(i, ex));
+      }
     }
+
+    if (uncompleted.isEmpty) {
+      await _finalizarTreino();
+      return;
+    }
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.card,
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+              SizedBox(width: 8),
+              Text('Exercícios Pendentes'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Você ainda não registrou nenhuma série para os seguintes exercícios:',
+                  style: TextStyle(color: AppColors.onSurface),
+                ),
+                const SizedBox(height: 12),
+                ...uncompleted.map((entry) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 6),
+                            child: Icon(Icons.circle, size: 6, color: AppColors.warning),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              entry.value.nome,
+                              style: const TextStyle(
+                                color: AppColors.onBackground,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: 12),
+                const Text(
+                  'Deseja finalizar o treino mesmo assim ou voltar para realizá-los?',
+                  style: TextStyle(color: AppColors.onSurface),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _finalizarTreino();
+              },
+              child: const Text(
+                'Finalizar mesmo assim',
+                style: TextStyle(color: AppColors.primaryLight),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final firstPending = uncompleted.first;
+                _restTimer?.cancel();
+                setState(() {
+                  _currentIndex = firstPending.key;
+                  _resting = false;
+                });
+                await _loadExerciseContext();
+              },
+              child: const Text('Revisar Pendentes'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _finalizarTreino() async {
@@ -367,19 +483,29 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
           title: Text(widget.dayName),
           actions: [
             // Cronômetro da sessão
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Center(
-                child: Text(
-                  WeekUtils.formatDuration(_sessionSecs),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
+            Center(
+              child: Text(
+                WeekUtils.formatDuration(_sessionSecs),
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _confirmarFinalizarTreino,
+              icon: const Icon(Icons.check_rounded, color: AppColors.primaryLight, size: 18),
+              label: const Text(
+                'Finalizar',
+                style: TextStyle(
+                  color: AppColors.primaryLight,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
           ],
         ),
         body: Column(
@@ -406,12 +532,94 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                   // ── Contador + grupo ───────────────────────────
                   Row(
                     children: [
-                      Text(
-                        '${_currentIndex + 1} / ${_exercises.length}',
-                        style: const TextStyle(
-                          color: AppColors.onSurface,
-                          fontSize: 13,
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: AppColors.onSurface),
+                        onPressed: _exercises.length > 1
+                            ? () async {
+                                _restTimer?.cancel();
+                                setState(() {
+                                  _currentIndex = (_currentIndex - 1 + _exercises.length) % _exercises.length;
+                                  _resting = false;
+                                });
+                                await _loadExerciseContext();
+                              }
+                            : null,
+                      ),
+                      const SizedBox(width: 6),
+                      PopupMenuButton<int>(
+                        tooltip: 'Selecionar exercício',
+                        color: AppColors.card,
+                        onSelected: (index) async {
+                          _restTimer?.cancel();
+                          setState(() {
+                            _currentIndex = index;
+                            _resting = false;
+                          });
+                          await _loadExerciseContext();
+                        },
+                        itemBuilder: (context) {
+                          return _exercises.asMap().entries.map((entry) {
+                            final idx = entry.key;
+                            final e = entry.value;
+                            final isCurrent = idx == _currentIndex;
+                            return PopupMenuItem<int>(
+                              value: idx,
+                              child: Row(
+                                children: [
+                                  if (isCurrent)
+                                    const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 16)
+                                  else
+                                    const SizedBox(width: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      e.nome,
+                                      style: TextStyle(
+                                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                        color: isCurrent ? AppColors.primaryLight : AppColors.onBackground,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList();
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${_currentIndex + 1} / ${_exercises.length}',
+                              style: const TextStyle(
+                                color: AppColors.onBackground,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Icon(Icons.arrow_drop_down_rounded, color: AppColors.onSurface, size: 18),
+                          ],
                         ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.onSurface),
+                        onPressed: _exercises.length > 1
+                            ? () async {
+                                _restTimer?.cancel();
+                                setState(() {
+                                  _currentIndex = (_currentIndex + 1) % _exercises.length;
+                                  _resting = false;
+                                });
+                                await _loadExerciseContext();
+                              }
+                            : null,
                       ),
                       const Spacer(),
                       _Chip(ex.grupoMuscular),
