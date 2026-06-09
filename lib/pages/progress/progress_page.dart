@@ -1807,13 +1807,47 @@ class _GoalsManager extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
           backgroundColor: AppColors.card,
-          title: const Text('Nova Meta'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.emoji_events_rounded, color: AppColors.primaryLight, size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Nova Meta',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                  letterSpacing: 0.5,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 value: selectedType,
-                decoration: const InputDecoration(labelText: 'Tipo de Meta'),
+                dropdownColor: AppColors.card,
+                borderRadius: BorderRadius.circular(16),
+                decoration: InputDecoration(
+                  labelText: 'Tipo de Meta',
+                  labelStyle: const TextStyle(color: AppColors.onSurface, fontSize: 13),
+                  filled: true,
+                  fillColor: Colors.black.withOpacity(0.2),
+                  prefixIcon: const Icon(Icons.category_rounded, color: AppColors.onSurface, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider, width: 1)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'peso', child: Text('Peso Corporal')),
                   DropdownMenuItem(value: 'carga', child: Text('Carga de Exercício')),
@@ -1827,27 +1861,75 @@ class _GoalsManager extends ConsumerWidget {
                 },
               ),
               if (selectedType == 'carga') ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<Exercise>(
-                  value: selectedExercise,
-                  decoration: const InputDecoration(labelText: 'Selecione o Exercício'),
-                  items: exercises.map((e) {
-                    return DropdownMenuItem(value: e, child: Text(e.nome));
-                  }).toList(),
-                  onChanged: (val) {
-                    setStateDialog(() {
-                      selectedExercise = val;
-                    });
-                  },
-                ),
+                const SizedBox(height: 16),
+                if (exercises.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Cadastre exercícios para definir metas de carga.',
+                            style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<Exercise>(
+                    value: selectedExercise,
+                    dropdownColor: AppColors.card,
+                    borderRadius: BorderRadius.circular(16),
+                    decoration: InputDecoration(
+                      labelText: 'Selecione o Exercício',
+                      labelStyle: const TextStyle(color: AppColors.onSurface, fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.black.withOpacity(0.2),
+                      prefixIcon: const Icon(Icons.fitness_center_rounded, color: AppColors.onSurface, size: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider, width: 1)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    items: exercises.map((e) {
+                      return DropdownMenuItem(
+                        value: e,
+                        child: Text(e.nome, overflow: TextOverflow.ellipsis),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setStateDialog(() {
+                        selectedExercise = val;
+                      });
+                    },
+                  ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: valueController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Valor Alvo (kg)',
+                decoration: InputDecoration(
+                  labelText: 'Valor Alvo',
+                  labelStyle: const TextStyle(color: AppColors.onSurface, fontSize: 13),
                   hintText: '80.0',
+                  suffixText: 'kg',
+                  suffixStyle: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold),
+                  filled: true,
+                  fillColor: Colors.black.withOpacity(0.2),
+                  prefixIcon: const Icon(Icons.ads_click_rounded, color: AppColors.onSurface, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider, width: 1)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
               ),
             ],
@@ -1855,7 +1937,11 @@ class _GoalsManager extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.onSurface,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1883,7 +1969,14 @@ class _GoalsManager extends ConsumerWidget {
                 ref.read(goalsProvider.notifier).addGoal(newGoal);
                 Navigator.pop(ctx);
               },
-              child: const Text('Salvar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 2,
+              ),
+              child: const Text('Salvar', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),

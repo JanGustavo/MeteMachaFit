@@ -1,7 +1,11 @@
 // lib/pages/profile/profile_page.dart
 
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/providers/providers.dart';
@@ -70,6 +74,155 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         const SnackBar(content: Text('Perfil atualizado ✓')),
       );
     }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+
+      String finalPath;
+      if (kIsWeb) {
+        finalPath = pickedFile.path;
+      } else {
+        final appDir = await getApplicationDocumentsDirectory();
+        final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final savedFile = await File(pickedFile.path).copy('${appDir.path}/$fileName');
+        finalPath = savedFile.path;
+      }
+
+      await ref.read(profilePhotoProvider.notifier).setPhoto(finalPath);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao escolher imagem: $e')),
+        );
+      }
+    }
+  }
+
+  void _showPhotoOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Foto de Perfil',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: AppColors.primaryLight),
+              title: const Text('Escolher da Galeria'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primaryLight),
+              title: const Text('Tirar Foto (Câmera)'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link_rounded, color: AppColors.primaryLight),
+              title: const Text('Usar GitHub ou Link URL'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showUrlInputDialog(context);
+              },
+            ),
+            if (ref.watch(profilePhotoProvider) != null)
+              ListTile(
+                leading: const Icon(Icons.delete_rounded, color: Colors.redAccent),
+                title: const Text('Remover Foto', style: TextStyle(color: Colors.redAccent)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ref.read(profilePhotoProvider.notifier).setPhoto(null);
+                },
+              ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUrlInputDialog(BuildContext context) {
+    final urlCtrl = TextEditingController(
+        text: ref.read(profilePhotoProvider)?.startsWith('http') == true
+            ? ref.read(profilePhotoProvider)
+            : '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Foto do GitHub ou URL'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Insira seu usuário do GitHub (ex: JanGustavo) ou qualquer link de imagem da internet:',
+              style: TextStyle(fontSize: 13, color: AppColors.onSurface),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: urlCtrl,
+              decoration: const InputDecoration(
+                hintText: 'Nome de usuário ou Link URL',
+                filled: true,
+                prefixIcon: Icon(Icons.link_rounded),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              String input = urlCtrl.text.trim();
+              if (input.isEmpty) return;
+
+              String finalUrl = input;
+              if (!input.startsWith('http://') && !input.startsWith('https://')) {
+                finalUrl = 'https://github.com/$input.png';
+              }
+
+              Navigator.pop(ctx);
+              await ref.read(profilePhotoProvider.notifier).setPhoto(finalUrl);
+            },
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -185,6 +338,57 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             child: profileAsync.when(
               data: (profile) {
                 _populate(profile);
+
+                final photoPath = ref.watch(profilePhotoProvider);
+                Widget avatarChild;
+                if (photoPath == null || photoPath.isEmpty) {
+                  avatarChild = const Icon(
+                    Icons.person_rounded,
+                    size: 36,
+                    color: AppColors.primary,
+                  );
+                } else if (photoPath.startsWith('http') || photoPath.startsWith('https')) {
+                  avatarChild = ClipRRect(
+                    borderRadius: BorderRadius.circular(44),
+                    child: Image.network(
+                      photoPath,
+                      width: 88,
+                      height: 88,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.person_rounded,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  );
+                } else if (kIsWeb) {
+                  avatarChild = ClipRRect(
+                    borderRadius: BorderRadius.circular(44),
+                    child: Image.network(
+                      photoPath,
+                      width: 88,
+                      height: 88,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                } else {
+                  avatarChild = ClipRRect(
+                    borderRadius: BorderRadius.circular(44),
+                    child: Image.file(
+                      File(photoPath),
+                      width: 88,
+                      height: 88,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.person_rounded,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  );
+                }
+
                 return Card(
                   margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                   child: Padding(
@@ -192,13 +396,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     child: Column(
                       children: [
                         // Avatar / ícone
-                        CircleAvatar(
-                          radius: 36,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                          child: const Icon(
-                            Icons.person_rounded,
-                            size: 36,
-                            color: AppColors.primary,
+                        GestureDetector(
+                          onTap: () => _showPhotoOptions(context),
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 44,
+                                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                                child: avatarChild,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 20),

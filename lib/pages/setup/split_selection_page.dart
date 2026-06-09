@@ -11,6 +11,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/providers.dart';
 import '../../core/theme/app_theme.dart';
 import 'setup_page.dart';
+import '../../main.dart';
 
 const bool groqBeta = true;
 
@@ -418,18 +419,22 @@ class SplitSelectionPage extends ConsumerWidget {
                     ref.invalidate(activeSplitProvider);
                     ref.invalidate(activeSplitDaysProvider);
 
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                    final nav = navigatorKey.currentState;
+                    final rootContext = navigatorKey.currentContext;
+
+                    if (rootContext != null && rootContext.mounted) {
+                      ScaffoldMessenger.of(rootContext).showSnackBar(
                         const SnackBar(content: Text('Treino adicionado com sucesso! ✓')),
                       );
-                      if (!isOnboarding) {
-                        Navigator.pop(context); // Volta ao Dashboard se não estiver no onboarding
-                      }
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SetupPage(initialTab: 2)),
-                      );
                     }
+
+                    if (!isOnboarding && context.mounted) {
+                      Navigator.pop(context); // Volta ao Dashboard se não estiver no onboarding
+                    }
+
+                    nav?.push(
+                      MaterialPageRoute(builder: (_) => const SetupPage(initialTab: 2)),
+                    );
                   },
                   child: const Text('ATIVAR ESTE TREINO'),
                 ),
@@ -607,7 +612,12 @@ class SplitSelectionPage extends ConsumerWidget {
             children: [
               Icon(Icons.code_rounded, color: AppColors.primary),
               SizedBox(width: 8),
-              Text('Importar Treino (JSON)'),
+              Expanded(
+                child: Text(
+                  'Importar Treino (JSON)',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -628,6 +638,20 @@ class SplitSelectionPage extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
+                    if (groqBeta) ...[
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: () => _showAiImportDialog(context, textCtrl),
+                          icon: const Icon(Icons.psychology_rounded, color: AppColors.primaryLight),
+                          label: const Text(
+                            'Formatar com IA',
+                            style: TextStyle(color: AppColors.primaryLight),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Expanded(
                       child: TextButton.icon(
                         onPressed: () async {
@@ -668,17 +692,12 @@ class SplitSelectionPage extends ConsumerWidget {
                           }
                         },
                         icon: const Icon(Icons.copy_all_rounded, size: 16),
-                        label: const Text('Copiar Instruções', overflow: TextOverflow.ellipsis),
+                        label: const Text(
+                          'Copiar Instruções',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
-                    if (groqBeta) ...[
-                      const SizedBox(width: 8),
-                      TextButton.icon(
-                        onPressed: () => _showAiImportDialog(context, textCtrl),
-                        icon: const Icon(Icons.psychology_rounded, color: AppColors.primaryLight),
-                        label: const Text('Formatar com IA', style: TextStyle(color: AppColors.primaryLight)),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -840,20 +859,24 @@ class SplitSelectionPage extends ConsumerWidget {
                   ref.invalidate(activeSplitProvider);
                   ref.invalidate(activeSplitDaysProvider);
 
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                  final nav = navigatorKey.currentState;
+                  final rootContext = navigatorKey.currentContext;
+
+                  if (rootContext != null && rootContext.mounted) {
+                    ScaffoldMessenger.of(rootContext).showSnackBar(
                       const SnackBar(
                         content: Text('Treino importado e ativado com sucesso! ✓'),
                       ),
                     );
-                    if (!isOnboarding) {
-                      Navigator.pop(context);
-                    }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SetupPage(initialTab: 2)),
-                    );
                   }
+
+                  if (!isOnboarding && context.mounted) {
+                    Navigator.pop(context);
+                  }
+
+                  nav?.push(
+                    MaterialPageRoute(builder: (_) => const SetupPage(initialTab: 2)),
+                  );
                 } catch (e) {
                   if (context.mounted) {
                     showDialog(
@@ -898,7 +921,12 @@ class SplitSelectionPage extends ConsumerWidget {
               children: [
                 Icon(Icons.psychology_rounded, color: AppColors.primaryLight),
                 SizedBox(width: 8),
-                Text('Formatar Treino com IA'),
+                Expanded(
+                  child: Text(
+                    'Formatar Treino com IA',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             content: SingleChildScrollView(

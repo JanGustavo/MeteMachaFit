@@ -1,11 +1,32 @@
 // lib/core/services/notification_service_web.dart
 
 import 'dart:js' as js;
+import 'package:flutter/material.dart';
+import '../../main.dart';
+import '../../pages/workout/workout_page.dart';
+import '../providers/rest_timer_provider.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+
+  static void openActiveWorkout() {
+    final state = globalProviderContainer.read(restTimerProvider);
+    if (state.dayId != null && state.sessionId != null) {
+      if (state.inWorkoutPage) return;
+
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => WorkoutPage(
+            dayId: state.dayId!,
+            dayName: state.dayName ?? 'Treino',
+            sessionId: state.sessionId!,
+          ),
+        ),
+      );
+    }
+  }
 
   /// Solicita permissão para exibir notificações no navegador
   static void requestPermission() {

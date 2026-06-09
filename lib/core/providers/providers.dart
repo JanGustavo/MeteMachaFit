@@ -1,6 +1,7 @@
 // lib/core/providers/providers.dart
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
 import '../utils/week_utils.dart';
 
@@ -224,4 +225,29 @@ final workoutDaysMapProvider = StreamProvider<Map<int, WorkoutDay>>((ref) {
     return {for (final d in days) d.id: d};
   });
 });
+
+final profilePhotoProvider = StateNotifierProvider<ProfilePhotoNotifier, String?>((ref) {
+  return ProfilePhotoNotifier();
+});
+
+class ProfilePhotoNotifier extends StateNotifier<String?> {
+  ProfilePhotoNotifier() : super(null) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getString('profile_photo');
+  }
+
+  Future<void> setPhoto(String? path) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (path == null) {
+      await prefs.remove('profile_photo');
+    } else {
+      await prefs.setString('profile_photo', path);
+    }
+    state = path;
+  }
+}
 
