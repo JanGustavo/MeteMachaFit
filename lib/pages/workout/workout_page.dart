@@ -459,7 +459,6 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     _sessionTimer?.cancel();
     _skipRest();
 
-    // Busca os dados das séries salvas nessa sessão para gerar os cards de estatísticas
     double totalVolume = 0;
     int uniqueExercisesCount = 0;
     int totalSetsCount = 0;
@@ -468,7 +467,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
       final allSessionLogs = await ref.read(logDaoProvider).getLogsForSession(widget.sessionId);
       totalVolume = allSessionLogs.fold<double>(0.0, (sum, log) => sum + (log.peso * log.repeticoes));
       uniqueExercisesCount = allSessionLogs.map((log) => log.exerciseId).toSet().length;
-      totalSetsCount = allSessionLogs.length;
+      totalSetsCount = allSessionLogs.map((log) => '${log.exerciseId}_${log.serie}').toSet().length;
     } catch (e) {
       debugPrint('Erro ao calcular estatísticas do treino: $e');
     }
@@ -1339,6 +1338,12 @@ class _SetsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Group sets by serie number, preserving insertion order
+    final Map<int, List<_SetEntry>> grouped = {};
+    for (final s in sets) {
+      grouped.putIfAbsent(s.serie, () => []).add(s);
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1362,15 +1367,8 @@ class _SetsList extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 4,
-            children: sets.map((s) {
-              final ladoStr = (s.lado != 'ambos') ? ' (${s.lado})' : '';
-              final eqStr = (s.equipamento != null &&
-                      s.equipamento != exercise.equipamento)
-                  ? ' [${s.equipamento}]'
-                  : '';
-              final obsStr = (s.observacoes != null && s.observacoes!.isNotEmpty)
-                  ? ' (${s.observacoes})'
-                  : '';
+            children: grouped.values.map((group) {
+              final formattedText = _formatSeriesGroup(group);
               return Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1379,7 +1377,7 @@ class _SetsList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'S${s.serie}: ${s.peso}kg × ${s.reps}$ladoStr$eqStr$obsStr',
+                  formattedText,
                   style: const TextStyle(
                     color: AppColors.onBackground,
                     fontSize: 12,
@@ -1392,6 +1390,51 @@ class _SetsList extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatSeriesGroup(List<_SetEntry> entries) {
+    if (entries.isEmpty) return '';
+    final s = entries.first;
+    final serieLabel = 'S${s.serie}:';
+    
+    // Equipment and observations usually match, let's grab them from first or combine
+    final eqStr = (s.equipamento != null && s.equipamento != exercise.equipamento)
+        ? ' [${s.equipamento}]'
+        : '';
+    final obsStr = (s.observacoes != null && s.observacoes!.isNotEmpty)
+        ? ' (${s.observacoes})'
+        : '';
+
+    if (entries.length == 1) {
+      final ladoStr = (s.lado != 'ambos') 
+          ? ' (${s.lado == 'esquerdo' ? 'E' : s.lado == 'direito' ? 'D' : s.lado})' 
+          : '';
+      return '$serieLabel ${s.peso}kg × ${s.reps}$ladoStr$eqStr$obsStr';
+    }
+
+    // Check if all entries in this series have the same weight
+    final allSameWeight = entries.every((e) => e.peso == s.peso);
+    if (allSameWeight) {
+      final allSameReps = entries.every((e) => e.reps == s.reps);
+      if (allSameReps) {
+        // S1: 10kg × 10 (E+D)
+        return '$serieLabel ${s.peso}kg × ${s.reps} (E+D)$eqStr$obsStr';
+      } else {
+        // S1: 10kg × 10(E) / 8(D)
+        final repsMap = entries.map((e) {
+          final sideLetter = e.lado == 'esquerdo' ? 'E' : e.lado == 'direito' ? 'D' : e.lado;
+          return '${e.reps}($sideLetter)';
+        }).join(' / ');
+        return '$serieLabel ${s.peso}kg × $repsMap$eqStr$obsStr';
+      }
+    } else {
+      // S1: 10kg × 10(E) / 12kg × 8(D)
+      final parts = entries.map((e) {
+        final sideLetter = e.lado == 'esquerdo' ? 'E' : e.lado == 'direito' ? 'D' : e.lado;
+        return '${e.peso}kg × ${e.reps}($sideLetter)';
+      }).join(' / ');
+      return '$serieLabel $parts$eqStr$obsStr';
+    }
   }
 }
 
