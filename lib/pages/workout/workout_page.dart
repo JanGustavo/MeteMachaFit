@@ -429,6 +429,20 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     _sessionTimer?.cancel();
     _skipRest();
 
+    // Busca os dados das séries salvas nessa sessão para gerar os cards de estatísticas
+    double totalVolume = 0;
+    int uniqueExercisesCount = 0;
+    int totalSetsCount = 0;
+
+    try {
+      final allSessionLogs = await ref.read(logDaoProvider).getLogsForSession(widget.sessionId);
+      totalVolume = allSessionLogs.fold<double>(0.0, (sum, log) => sum + (log.peso * log.repeticoes));
+      uniqueExercisesCount = allSessionLogs.map((log) => log.exerciseId).toSet().length;
+      totalSetsCount = allSessionLogs.length;
+    } catch (e) {
+      debugPrint('Erro ao calcular estatísticas do treino: $e');
+    }
+
     await ref
         .read(workoutDaoProvider)
         .finishSession(widget.sessionId, _sessionSecs);
@@ -436,37 +450,255 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     AudioService().workoutDone();
 
     if (!mounted) return;
-    _showFinishDialog();
+    _showFinishDialog(
+      totalVolume: totalVolume,
+      uniqueExercises: uniqueExercisesCount,
+      totalSets: totalSetsCount,
+    );
   }
 
-  void _showFinishDialog() {
-    showDialog(
+  void _showFinishDialog({
+    required double totalVolume,
+    required int uniqueExercises,
+    required int totalSets,
+  }) {
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.card,
-        title: Row(
-          children: [
-            const Icon(Icons.emoji_events_rounded, color: AppColors.warning),
-            const SizedBox(width: 8),
-            const Text('Treino Concluído!'),
-          ],
+      barrierColor: Colors.black.withOpacity(0.8),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) => const SizedBox.shrink(),
+      transitionBuilder: (context, anim1, anim2, child) {
+        final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutBack);
+        return ScaleTransition(
+          scale: curve,
+          child: FadeTransition(
+            opacity: anim1,
+            child: AlertDialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              contentPadding: EdgeInsets.zero,
+              content: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.card.withOpacity(0.95),
+                      AppColors.card.withOpacity(0.85),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.35),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.15),
+                      blurRadius: 24,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Glowing circular Trophy/Cup Container
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.amber.shade300,
+                            Colors.orange.shade600,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.4),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.emoji_events_rounded,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Congratulations Text
+                    const Text(
+                      'TREINO CONCLUÍDO!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primaryLight,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Mais um treino pra conta, Mete Macha! 🔥',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.onSurface.withOpacity(0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Divider(color: Colors.white10, height: 1),
+                    const SizedBox(height: 20),
+
+                    // Stats Grid (2 columns x 2 rows)
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.45,
+                      children: [
+                        _buildFinishStatCard(
+                          icon: Icons.timer_rounded,
+                          iconColor: Colors.blueAccent,
+                          label: 'Duração',
+                          value: WeekUtils.formatDuration(_sessionSecs),
+                        ),
+                        _buildFinishStatCard(
+                          icon: Icons.fitness_center_rounded,
+                          iconColor: AppColors.primaryLight,
+                          label: 'Exercícios',
+                          value: '$uniqueExercises',
+                        ),
+                        _buildFinishStatCard(
+                          icon: Icons.view_headline_rounded,
+                          iconColor: Colors.purpleAccent,
+                          label: 'Séries',
+                          value: '$totalSets',
+                        ),
+                        _buildFinishStatCard(
+                          icon: Icons.flash_on_rounded,
+                          iconColor: Colors.greenAccent,
+                          label: 'Volume Total',
+                          value: '${totalVolume.toStringAsFixed(0)} kg',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Glowing Button to return
+                    SizedBox(
+                      width: double.infinity,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                'VOLTAR AO INÍCIO',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFinishStatCard({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.06),
+          width: 1,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _statRow('Duração', WeekUtils.formatDuration(_sessionSecs)),
-            _statRow('Exercícios', '${_exercises.length}'),
-            _statRow('Séries salvas', '${_setsLogged.length}'),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: const Text('Voltar ao Início'),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: iconColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.onSurface,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
