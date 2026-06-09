@@ -11,12 +11,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/constants/equipment_options.dart';
 import '../../core/providers/providers.dart';
+import '../../core/providers/rest_timer_provider.dart';
+import '../../core/providers/progress_extended_provider.dart';
 import '../../core/services/audio_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/week_utils.dart';
@@ -72,12 +77,6 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
   String? _equipamentoSelecionado;
   bool _executandoUnilateral = false;
 
-  // ── Rest timer ──────────────────────────────────────────────────
-  bool _resting = false;
-  int _restTotal = 90;
-  int _restLeft = 90;
-  Timer? _restTimer;
-
   // ── Session timer ───────────────────────────────────────────────
   int _sessionSecs = 0;
   Timer? _sessionTimer;
@@ -89,14 +88,19 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     super.initState();
     _loadExercises();
     _startSessionTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(restTimerProvider.notifier).setInWorkoutPage(true);
+    });
   }
 
   @override
   void dispose() {
-    _restTimer?.cancel();
     _sessionTimer?.cancel();
     _pesoCtrl.dispose();
     _repsCtrl.dispose();
+    try {
+      ref.read(restTimerProvider.notifier).setInWorkoutPage(false);
+    } catch (_) {}
     super.dispose();
   }
 
@@ -120,8 +124,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     final prev = await ref.read(logDaoProvider).getLastLogsForExercise(ex.id);
 
     // Busca logs já realizados na sessão atual para este exercício
-    final currentLogs = await ref.read(logDaoProvider).getLogsForSession(widget.sessionId);
-    final exerciseSessionLogs = currentLogs.where((l) => l.exerciseId == ex.id).toList();
+    final currentLogs =
+        await ref.read(logDaoProvider).getLogsForSession(widget.sessionId);
+    final exerciseSessionLogs =
+        currentLogs.where((l) => l.exerciseId == ex.id).toList();
 
     setState(() {
       _prevLogs = prev;
@@ -135,7 +141,6 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
             equipamento: l.equipamento,
           )));
       _lado = 'ambos';
-      _restTotal = ex.tempoDescansoSegundos;
       _executandoUnilateral = ex.isUnilateral;
       _equipamentoSelecionado = ex.equipamento;
 
@@ -143,8 +148,17 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
         _pesoCtrl.text = exerciseSessionLogs.last.peso.toString();
         _repsCtrl.text = exerciseSessionLogs.last.repeticoes.toString();
       } else if (prev.isNotEmpty) {
-        _pesoCtrl.text = prev.last.peso.toString();
-        _repsCtrl.text = prev.last.repeticoes.toString();
+        final totalPeso = prev.map((l) => l.peso).fold<double>(0.0, (a, b) => a + b);
+        final totalReps = prev.map((l) => l.repeticoes).fold<int>(0, (a, b) => a + b);
+        final avgPeso = totalPeso / prev.length;
+        final avgReps = (totalReps / prev.length).round();
+
+        final pesoStr = avgPeso % 1 == 0 
+            ? avgPeso.toInt().toString() 
+            : avgPeso.toStringAsFixed(1);
+
+        _pesoCtrl.text = pesoStr;
+        _repsCtrl.text = avgReps.toString();
       } else {
         _pesoCtrl.text = '0';
         _repsCtrl.text = '10';
@@ -161,29 +175,16 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
   }
 
   void _startRestTimer(int seconds) {
-    _restTimer?.cancel();
-    setState(() {
-      _resting = true;
-      _restTotal = seconds;
-      _restLeft = seconds;
-    });
-    _restTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      setState(() => _restLeft--);
-      if (_restLeft <= 0) {
-        t.cancel();
-        AudioService().restEnd();
-        setState(() => _resting = false);
-      }
-    });
+    ref.read(restTimerProvider.notifier).startRest(
+          seconds,
+          dayId: widget.dayId,
+          dayName: widget.dayName,
+          sessionId: widget.sessionId,
+        );
   }
 
   void _skipRest() {
-    _restTimer?.cancel();
-    setState(() => _resting = false);
+    ref.read(restTimerProvider.notifier).cancelRest();
   }
 
   // ── Convenience getters ─────────────────────────────────────────
@@ -192,6 +193,16 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
   bool get _isLast => _currentIndex >= _exercises.length - 1;
 
   // ── Actions ─────────────────────────────────────────────────────
+
+  int? _obterSeriesEsperadas(String? volume) {
+    if (volume == null || volume.isEmpty) return null;
+    final regex = RegExp(r'^(\d+)', caseSensitive: false);
+    final match = regex.firstMatch(volume.trim());
+    if (match != null) {
+      return int.tryParse(match.group(1) ?? '');
+    }
+    return null;
+  }
 
   Future<void> _salvarSerie() async {
     final peso = double.tryParse(_pesoCtrl.text.replaceAll(',', '.')) ?? 0;
@@ -240,6 +251,26 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     });
 
     _startRestTimer(_current.tempoDescansoSegundos);
+
+    final expectedSets = _obterSeriesEsperadas(_current.volume);
+    if (expectedSets != null && _setsLogged.length >= expectedSets) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Você completou as $expectedSets séries recomendadas!'),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'IR PARA O PRÓXIMO',
+              textColor: AppColors.primaryLight,
+              onPressed: () {
+                _proximoExercicio();
+              },
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _proximoExercicio() async {
@@ -248,24 +279,19 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
       await ref.read(exerciseDaoProvider).incrementVezesFeito(_current.id);
     }
 
-    _restTimer?.cancel();
-
     if (_isLast) {
       await _confirmarFinalizarTreino();
     } else {
       setState(() {
         _currentIndex++;
-        _resting = false;
       });
       await _loadExerciseContext();
     }
   }
 
   Future<void> _pularExercicio() async {
-    _restTimer?.cancel();
     setState(() {
       _currentIndex = (_currentIndex + 1) % _exercises.length;
-      _resting = false;
     });
     await _loadExerciseContext();
   }
@@ -319,7 +345,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         children: [
                           const Padding(
                             padding: EdgeInsets.only(top: 6),
-                            child: Icon(Icons.circle, size: 6, color: AppColors.warning),
+                            child: Icon(Icons.circle,
+                                size: 6, color: AppColors.warning),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -361,10 +388,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
               onPressed: () async {
                 Navigator.pop(ctx);
                 final firstPending = uncompleted.first;
-                _restTimer?.cancel();
                 setState(() {
                   _currentIndex = firstPending.key;
-                  _resting = false;
                 });
                 await _loadExerciseContext();
               },
@@ -378,7 +403,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
 
   Future<void> _finalizarTreino() async {
     _sessionTimer?.cancel();
-    _restTimer?.cancel();
+    _skipRest();
 
     await ref
         .read(workoutDaoProvider)
@@ -424,6 +449,43 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     );
   }
 
+  void _showMusicBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => const _WorkoutMusicPanel(),
+    );
+  }
+
+  void _showAddReferenceBottomSheet(BuildContext context, Exercise ex) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _AddReferencePanel(
+        exercise: ex,
+        onSaved: (newLink) async {
+          final updated = ex.copyWith(link: drift.Value(newLink));
+          await ref.read(exerciseDaoProvider).updateExercise(updated);
+          setState(() {
+            _exercises[_currentIndex] = updated;
+          });
+          if (mounted) Navigator.pop(ctx);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Referência salva com sucesso!')),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _statRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -443,6 +505,11 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
 
   @override
   Widget build(BuildContext context) {
+    final timerState = ref.watch(restTimerProvider);
+    final _resting = timerState.isActive;
+    final _restLeft = timerState.remainingSeconds;
+    final _restTotal = timerState.totalSeconds;
+
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -494,9 +561,16 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
               ),
             ),
             const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.music_note_rounded, color: AppColors.primaryLight),
+              tooltip: 'Música',
+              onPressed: () => _showMusicBottomSheet(context),
+            ),
+            const SizedBox(width: 4),
             TextButton.icon(
               onPressed: _confirmarFinalizarTreino,
-              icon: const Icon(Icons.check_rounded, color: AppColors.primaryLight, size: 18),
+              icon: const Icon(Icons.check_rounded,
+                  color: AppColors.primaryLight, size: 18),
               label: const Text(
                 'Finalizar',
                 style: TextStyle(
@@ -536,13 +610,14 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: AppColors.onSurface),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 14, color: AppColors.onSurface),
                         onPressed: _exercises.length > 1
                             ? () async {
-                                _restTimer?.cancel();
                                 setState(() {
-                                  _currentIndex = (_currentIndex - 1 + _exercises.length) % _exercises.length;
-                                  _resting = false;
+                                  _currentIndex =
+                                      (_currentIndex - 1 + _exercises.length) %
+                                          _exercises.length;
                                 });
                                 await _loadExerciseContext();
                               }
@@ -553,10 +628,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         tooltip: 'Selecionar exercício',
                         color: AppColors.card,
                         onSelected: (index) async {
-                          _restTimer?.cancel();
                           setState(() {
                             _currentIndex = index;
-                            _resting = false;
                           });
                           await _loadExerciseContext();
                         },
@@ -570,7 +643,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                               child: Row(
                                 children: [
                                   if (isCurrent)
-                                    const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 16)
+                                    const Icon(Icons.play_arrow_rounded,
+                                        color: AppColors.primary, size: 16)
                                   else
                                     const SizedBox(width: 16),
                                   const SizedBox(width: 8),
@@ -578,8 +652,12 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                                     child: Text(
                                       e.nome,
                                       style: TextStyle(
-                                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                                        color: isCurrent ? AppColors.primaryLight : AppColors.onBackground,
+                                        fontWeight: isCurrent
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: isCurrent
+                                            ? AppColors.primaryLight
+                                            : AppColors.onBackground,
                                       ),
                                     ),
                                   ),
@@ -600,7 +678,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                               ),
                             ),
                             const SizedBox(width: 2),
-                            const Icon(Icons.arrow_drop_down_rounded, color: AppColors.onSurface, size: 18),
+                            const Icon(Icons.arrow_drop_down_rounded,
+                                color: AppColors.onSurface, size: 18),
                           ],
                         ),
                       ),
@@ -609,13 +688,13 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.onSurface),
+                        icon: const Icon(Icons.arrow_forward_ios_rounded,
+                            size: 14, color: AppColors.onSurface),
                         onPressed: _exercises.length > 1
                             ? () async {
-                                _restTimer?.cancel();
                                 setState(() {
-                                  _currentIndex = (_currentIndex + 1) % _exercises.length;
-                                  _resting = false;
+                                  _currentIndex =
+                                      (_currentIndex + 1) % _exercises.length;
                                 });
                                 await _loadExerciseContext();
                               }
@@ -659,13 +738,23 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         icon: Icons.timer_rounded,
                         color: AppColors.info,
                       ),
-                      if (ex.link != null)
+                      if (ex.link != null && ex.link!.isNotEmpty)
                         GestureDetector(
                           onTap: () => _openLink(ex.link!),
+                          onLongPress: () => _showAddReferenceBottomSheet(context, ex),
                           child: const _BadgeTag(
                             label: 'Ver referência',
                             icon: Icons.play_circle_rounded,
                             color: AppColors.warning,
+                          ),
+                        )
+                      else
+                        GestureDetector(
+                          onTap: () => _showAddReferenceBottomSheet(context, ex),
+                          child: const _BadgeTag(
+                            label: 'Adicionar referência',
+                            icon: Icons.add_circle_outline_rounded,
+                            color: AppColors.onSurface,
                           ),
                         ),
                     ],
@@ -805,9 +894,13 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
   }
 
   Future<void> _openLink(String url) async {
-    final uri = Uri.tryParse(url);
+    final uri = Uri.tryParse(url.trim());
     if (uri == null) return;
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      // Falha silenciosa ou log
+    }
   }
 }
 
@@ -1059,11 +1152,15 @@ class _InputRow extends StatelessWidget {
 
 class _CircleButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final double size;
+  final bool disabled;
 
   const _CircleButton({
     required this.icon,
-    required this.onPressed,
+    this.onPressed,
+    this.size = 44,
+    this.disabled = false,
   });
 
   @override
@@ -1071,21 +1168,25 @@ class _CircleButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onPressed,
+        onTap: disabled ? null : onPressed,
         customBorder: const CircleBorder(),
         child: Ink(
-          width: 36,
-          height: 36,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: disabled
+                ? AppColors.surface.withOpacity(0.6)
+                : AppColors.surface,
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.divider),
           ),
           child: Center(
             child: Icon(
               icon,
-              size: 20,
-              color: AppColors.primaryLight,
+              size: size * 0.5,
+              color: disabled
+                  ? AppColors.onSurface.withOpacity(0.5)
+                  : AppColors.primaryLight,
             ),
           ),
         ),
@@ -1094,7 +1195,7 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-class _NumberField extends StatelessWidget {
+class _NumberField extends StatefulWidget {
   final TextEditingController ctrl;
   final String label;
   final bool decimal;
@@ -1105,57 +1206,99 @@ class _NumberField extends StatelessWidget {
     required this.label,
     this.decimal = false,
     required this.step,
-  });
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<_NumberField> createState() => _NumberFieldState();
+}
+
+class _NumberFieldState extends State<_NumberField> {
+  double _value = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _parseValue();
+    widget.ctrl.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.ctrl.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    setState(() => _parseValue());
+  }
+
+  void _parseValue() {
+    final text = widget.ctrl.text.replaceAll(',', '.');
+    _value = double.tryParse(text) ?? 0.0;
+    if (_value < 0) _value = 0;
+  }
 
   void _adjustValue(double delta) {
-    final text = ctrl.text.replaceAll(',', '.');
-    double val = double.tryParse(text) ?? 0.0;
-    val += delta;
-    if (val < 0) val = 0;
-
-    if (decimal) {
+    final newVal = (_value + delta).clamp(0.0, double.infinity);
+    double val = newVal;
+    if (widget.decimal) {
       if (val % 1 == 0) {
-        ctrl.text = val.toInt().toString();
+        widget.ctrl.text = val.toInt().toString();
       } else {
         if ((val * 2) % 1 == 0) {
-          ctrl.text = val.toStringAsFixed(1);
+          widget.ctrl.text = val.toStringAsFixed(1);
         } else {
-          ctrl.text = val.toStringAsFixed(2);
+          widget.ctrl.text = val.toStringAsFixed(2);
         }
       }
     } else {
-      ctrl.text = val.toInt().toString();
+      widget.ctrl.text = val.toInt().toString();
     }
+    setState(() => _parseValue());
   }
 
   @override
   Widget build(BuildContext context) {
+    final minusDisabled = _value <= 0.0;
     return Row(
       children: [
-        _CircleButton(
-          icon: Icons.remove_rounded,
-          onPressed: () => _adjustValue(-step),
+        Tooltip(
+          message: 'Diminuir',
+          child: _CircleButton(
+            icon: Icons.remove_rounded,
+            onPressed: minusDisabled ? null : () => _adjustValue(-widget.step),
+            size: 44,
+            disabled: minusDisabled,
+          ),
         ),
+        const SizedBox(width: 8),
         Expanded(
           child: TextField(
-            controller: ctrl,
+            controller: widget.ctrl,
             textAlign: TextAlign.center,
-            keyboardType: TextInputType.numberWithOptions(decimal: decimal),
+            keyboardType:
+                TextInputType.numberWithOptions(decimal: widget.decimal),
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: AppColors.onBackground,
             ),
             decoration: InputDecoration(
-              labelText: label,
+              labelText: widget.label,
               labelStyle: const TextStyle(fontSize: 11),
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
           ),
         ),
-        _CircleButton(
-          icon: Icons.add_rounded,
-          onPressed: () => _adjustValue(step),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: 'Aumentar',
+          child: _CircleButton(
+            icon: Icons.add_rounded,
+            onPressed: () => _adjustValue(widget.step),
+            size: 44,
+          ),
         ),
       ],
     );
@@ -1287,6 +1430,756 @@ class _BadgeTag extends StatelessWidget {
           Text(label,
               style: TextStyle(
                   color: color, fontSize: 11, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkoutMusicPanel extends ConsumerStatefulWidget {
+  const _WorkoutMusicPanel();
+
+  @override
+  ConsumerState<_WorkoutMusicPanel> createState() => _WorkoutMusicPanelState();
+}
+
+class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
+  String? _customAppName;
+  String? _customAppPackage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomApp();
+  }
+
+  Future<void> _loadCustomApp() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _customAppName = prefs.getString('custom_music_app_name');
+      _customAppPackage = prefs.getString('custom_music_app_package');
+    });
+  }
+
+  Future<void> _saveCustomApp(String name, String package) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('custom_music_app_name', name);
+    await prefs.setString('custom_music_app_package', package);
+    setState(() {
+      _customAppName = name;
+      _customAppPackage = package;
+    });
+  }
+
+  Future<void> _clearCustomApp() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('custom_music_app_name');
+    await prefs.remove('custom_music_app_package');
+    setState(() {
+      _customAppName = null;
+      _customAppPackage = null;
+    });
+  }
+
+  void _showAddCustomAppDialog() {
+    final nameCtrl = TextEditingController();
+    final packageCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: const Text('Adicionar App de Música'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Digite o nome do aplicativo e o ID do pacote Android (Package Name) para abrir diretamente.',
+              style: TextStyle(fontSize: 12, color: AppColors.onSurface),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Nome do Aplicativo',
+                hintText: 'Ex: Poweramp, VLC, Musicolet',
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.divider)),
+              ),
+              style: const TextStyle(color: AppColors.onBackground),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: packageCtrl,
+              decoration: const InputDecoration(
+                labelText: 'ID do Pacote Android (Package Name)',
+                hintText: 'Ex: com.maxmpz.audioplayer',
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.divider)),
+              ),
+              style: const TextStyle(color: AppColors.onBackground),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              final package = packageCtrl.text.trim();
+              if (name.isNotEmpty && package.isNotEmpty) {
+                _saveCustomApp(name, package);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Adicionar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final musicState = ref.watch(workoutMusicProvider);
+    final musicNotifier = ref.read(workoutMusicProvider.notifier);
+
+    return Container(
+      padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 24),
+      decoration: const BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.music_note_rounded, color: AppColors.primaryLight),
+                    SizedBox(width: 8),
+                    Text(
+                      'Rádio de Treino',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.onBackground,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.onSurface),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      color: AppColors.primary.withOpacity(0.1),
+                      child: musicState.isLoading
+                          ? const Padding(
+                              padding: EdgeInsets.all(12.0),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
+                              ),
+                            )
+                          : Icon(
+                              musicState.isPlaying ? Icons.music_note_rounded : Icons.music_off_rounded,
+                              color: AppColors.primaryLight,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          musicChannels[musicState.currentChannelIndex].name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.onBackground,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          musicChannels[musicState.currentChannelIndex].genre,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      musicState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: AppColors.onBackground,
+                      size: 28,
+                    ),
+                    onPressed: () => musicNotifier.togglePlay(),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.stop_rounded,
+                      color: AppColors.onSurface,
+                      size: 24,
+                    ),
+                    onPressed: () => musicNotifier.stop(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Estações de Foco / Energia',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: List.generate(musicChannels.length, (index) {
+                final channel = musicChannels[index];
+                final isSelected = musicState.currentChannelIndex == index;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: index == 0 ? 0 : 4,
+                      right: index == musicChannels.length - 1 ? 0 : 4,
+                    ),
+                    child: InkWell(
+                      onTap: () => musicNotifier.playChannel(index),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : AppColors.divider,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              channel.name.split(' ').first,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected ? AppColors.primaryLight : AppColors.onBackground,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              channel.genre.split(' / ').first,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.onSurface,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Abrir em aplicativos externos',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _MusicAppLinkButton(
+                    name: 'Spotify',
+                    assetPath: 'assets/images/spotify.png',
+                    packageName: 'com.spotify.music',
+                    url: 'spotify:',
+                    fallbackUrl: 'https://open.spotify.com',
+                  ),
+                  const SizedBox(width: 8),
+                  _MusicAppLinkButton(
+                    name: 'YT Music',
+                    assetPath: 'assets/images/ytmusic.png',
+                    packageName: 'com.google.android.apps.youtube.music',
+                    url: 'https://music.youtube.com',
+                    fallbackUrl: 'https://music.youtube.com',
+                  ),
+                  const SizedBox(width: 8),
+                  _MusicAppLinkButton(
+                    name: 'Deezer',
+                    assetPath: 'assets/images/deezer.png',
+                    packageName: 'deezer.android.app',
+                    url: 'deezer://',
+                    fallbackUrl: 'https://www.deezer.com',
+                  ),
+                  const SizedBox(width: 8),
+                  _MusicAppLinkButton(
+                    name: 'Samsung',
+                    assetPath: 'assets/images/samsung_music.png',
+                    packageName: 'com.sec.android.app.music',
+                    url: 'android-music-player://',
+                    fallbackUrl: 'https://play.google.com/store/apps/details?id=com.sec.android.app.music',
+                  ),
+                  const SizedBox(width: 8),
+                  _MusicAppLinkButton(
+                    name: 'Mi Music',
+                    assetPath: 'assets/images/mi_music.png',
+                    packageName: 'com.miui.player',
+                    url: 'miui-music://',
+                    fallbackUrl: 'https://play.google.com/store/apps/details?id=com.miui.player',
+                  ),
+                  if (_customAppName != null && _customAppPackage != null) ...[
+                    const SizedBox(width: 8),
+                    Stack(
+                      children: [
+                        _MusicAppLinkButton(
+                          name: _customAppName!,
+                          assetPath: 'assets/images/generic_player.png',
+                          packageName: _customAppPackage,
+                          url: 'intent:#Intent;package=$_customAppPackage;end',
+                          fallbackUrl: 'https://play.google.com/store/apps/details?id=$_customAppPackage',
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _clearCustomApp,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, size: 12, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _showAddCustomAppDialog,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 95,
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: AppColors.divider,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.add_rounded, color: AppColors.onSurface, size: 20),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            '+ Outro',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MusicAppLinkButton extends StatelessWidget {
+  final String name;
+  final String assetPath;
+  final String? packageName;
+  final String url;
+  final String fallbackUrl;
+
+  const _MusicAppLinkButton({
+    required this.name,
+    required this.assetPath,
+    this.packageName,
+    required this.url,
+    required this.fallbackUrl,
+  });
+
+  static const _channel = MethodChannel('com.example.gym/app_launcher');
+
+  Future<void> _launch() async {
+    // 1. Tenta abrir via pacote Android se disponível
+    if (packageName != null) {
+      try {
+        final bool launched = await _channel.invokeMethod('launchApp', {
+          'packageName': packageName,
+        });
+        if (launched) return;
+      } catch (_) {}
+    }
+
+    // 2. Tenta abrir via esquema customizado
+    try {
+      final appUri = Uri.parse(url);
+      final launched = await launchUrl(
+        appUri,
+        mode: LaunchMode.externalNonBrowserApplication,
+      );
+      if (launched) return;
+    } catch (_) {}
+
+    // 3. Fallback final para o navegador
+    try {
+      final webUri = Uri.parse(fallbackUrl);
+      await launchUrl(
+        webUri,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: _launch,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 95,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                assetPath,
+                width: 40,
+                height: 40,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onBackground,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddReferencePanel extends StatefulWidget {
+  final Exercise exercise;
+  final Function(String) onSaved;
+
+  const _AddReferencePanel({
+    required this.exercise,
+    required this.onSaved,
+  });
+
+  @override
+  State<_AddReferencePanel> createState() => _AddReferencePanelState();
+}
+
+class _AddReferencePanelState extends State<_AddReferencePanel> with WidgetsBindingObserver {
+  final _linkController = TextEditingController();
+  String? _detectedClipboardLink;
+  bool _checkingClipboard = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkClipboard();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _linkController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboard();
+    }
+  }
+
+  Future<void> _checkClipboard() async {
+    if (_checkingClipboard) return;
+    if (!mounted) return;
+    setState(() => _checkingClipboard = true);
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text;
+      if (text != null &&
+          (text.contains('youtube.com') ||
+              text.contains('youtu.be') ||
+              text.contains('tiktok.com'))) {
+        if (mounted) {
+          setState(() {
+            _detectedClipboardLink = text.trim();
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _detectedClipboardLink = null;
+          });
+        }
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _checkingClipboard = false);
+    }
+  }
+
+  void _searchYouTube() async {
+    final query = 'como fazer ${widget.exercise.nome}';
+    final url = 'https://www.youtube.com/results?search_query=${Uri.encodeComponent(query)}';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _searchTikTok() async {
+    final query = 'como fazer ${widget.exercise.nome}';
+    final url = 'https://www.tiktok.com/search?q=${Uri.encodeComponent(query)}';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        top: 16,
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text(
+            'Execução: ${widget.exercise.nome}',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.onBackground,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Busque a execução no YouTube ou TikTok. Ao copiar o link do vídeo e retornar para o app, você poderá colar e salvar o link abaixo como referência definitiva para este exercício.',
+            style: TextStyle(fontSize: 13, color: AppColors.onSurface),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _searchYouTube,
+                  icon: const Icon(Icons.play_circle_fill, color: Colors.white, size: 18),
+                  label: const Text('Buscar no YouTube'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF0000),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _searchTikTok,
+                  icon: const Icon(Icons.music_note, color: Colors.white, size: 18),
+                  label: const Text('Buscar no TikTok'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF010101),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: const BorderSide(color: AppColors.divider),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (_detectedClipboardLink != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.content_paste_go_rounded, color: AppColors.primaryLight, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'Link detectado na Área de Transferência:',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryLight),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _detectedClipboardLink!,
+                    style: const TextStyle(fontSize: 12, color: AppColors.onBackground),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        widget.onSaved(_detectedClipboardLink!);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      child: const Text('Usar Link Copiado & Salvar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          TextField(
+            controller: _linkController,
+            decoration: InputDecoration(
+              labelText: 'Link de referência manual',
+              hintText: 'https://www.youtube.com/watch?...',
+              labelStyle: const TextStyle(color: AppColors.onSurface),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.divider),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.paste_rounded, color: AppColors.primaryLight),
+                onPressed: () async {
+                  final data = await Clipboard.getData(Clipboard.kTextPlain);
+                  if (data?.text != null) {
+                    _linkController.text = data!.text!.trim();
+                  }
+                },
+              ),
+            ),
+            style: const TextStyle(color: AppColors.onBackground),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              final link = _linkController.text.trim();
+              if (link.isNotEmpty) {
+                widget.onSaved(link);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: const Text('Salvar Referência'),
+          ),
         ],
       ),
     );

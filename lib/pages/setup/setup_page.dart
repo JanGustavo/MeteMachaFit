@@ -486,42 +486,72 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
                   color: AppColors.surface,
                   border: Border(bottom: BorderSide(color: AppColors.divider)),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Selecionar Dia: ',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButtonFormField<WorkoutDay>(
-                        value: _selectedDay,
-                        dropdownColor: AppColors.card,
-                        decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Selecionar Dia:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.onBackground,
+                          ),
                         ),
-                        items: days
-                            .map((d) => DropdownMenuItem(
-                                  value: d,
-                                  child: Text('Dia ${d.letra} - ${d.nome}'),
-                                ))
-                            .toList(),
-                        onChanged: (d) => setState(() => _selectedDay = d),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_rounded,
+                                  color: AppColors.primaryLight, size: 20),
+                              tooltip: 'Editar Dia',
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(8),
+                              onPressed: () => _editDay(context, _selectedDay!),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline_rounded,
+                                  color: AppColors.primaryLight, size: 20),
+                              tooltip: 'Adicionar Dia',
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(8),
+                              onPressed: () =>
+                                  _addDay(context, _selectedDay!.splitId, days),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded,
+                                  color: AppColors.primaryLight, size: 20),
+                              tooltip: 'Excluir Dia',
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(8),
+                              onPressed: () =>
+                                  _deleteDay(context, _selectedDay!, days),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<WorkoutDay>(
+                      value: _selectedDay,
+                      dropdownColor: AppColors.card,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.edit_rounded, color: AppColors.primaryLight, size: 20),
-                      tooltip: 'Editar Dia',
-                      onPressed: () => _editDay(context, _selectedDay!),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primaryLight, size: 20),
-                      tooltip: 'Adicionar Dia',
-                      onPressed: () => _addDay(context, _selectedDay!.splitId, days),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.primaryLight, size: 20),
-                      tooltip: 'Excluir Dia',
-                      onPressed: () => _deleteDay(context, _selectedDay!, days),
+                      items: days
+                          .map((d) => DropdownMenuItem(
+                                value: d,
+                                child: Text(
+                                  'Dia ${d.letra} - ${d.nome}',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ))
+                          .toList(),
+                      onChanged: (d) => setState(() => _selectedDay = d),
                     ),
                   ],
                 ),
@@ -1041,10 +1071,12 @@ void _showAddExerciseSheet(
 // \u2500\u2500\u2500 AUXILIAR PARA ABRIR LINKS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 Future<void> _openLink(String url) async {
-  final uri = Uri.tryParse(url);
+  final uri = Uri.tryParse(url.trim());
   if (uri == null) return;
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
+  try {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    // Falha silenciosa ou log
   }
 }
 
@@ -1140,30 +1172,27 @@ class _WeeklyScheduleTab extends ConsumerWidget {
                             color: AppColors.onBackground),
                       ),
                       const SizedBox(height: 10),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            // Descanso Draggable
-                            _buildDraggableItem(
-                              label: 'Descanso 💧',
-                              id: -1,
-                              color: Colors.grey.shade700,
-                            ),
-                            const SizedBox(width: 8),
-                            // Workout Days
-                            ...workoutDays.map((day) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: _buildDraggableItem(
-                                  label: 'Treino ${day.letra}: ${day.nome}',
-                                  id: day.id,
-                                  color: AppColors.getWorkoutColor(day.letra),
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 10,
+                        children: [
+                          // Descanso Draggable
+                          _buildDraggableItem(
+                            context: context,
+                            label: 'Descanso 💧',
+                            id: -1,
+                            color: Colors.grey.shade700,
+                          ),
+                          // Workout Days
+                          ...workoutDays.map((day) {
+                            return _buildDraggableItem(
+                              context: context,
+                              label: 'Treino ${day.letra}: ${day.nome}',
+                              id: day.id,
+                              color: AppColors.getWorkoutColor(day.letra),
+                            );
+                          }),
+                        ],
                       ),
                       const SizedBox(height: 24),
 
@@ -1407,11 +1436,15 @@ class _WeeklyScheduleTab extends ConsumerWidget {
   }
 
   Widget _buildDraggableItem({
+    required BuildContext context,
     required String label,
     required int id,
     required Color color,
   }) {
     final chip = Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width - 48,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: color,
@@ -1433,12 +1466,16 @@ class _WeeklyScheduleTab extends ConsumerWidget {
             color: Colors.white,
           ),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
