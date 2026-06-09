@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "MeteMacha (Chrome Persistent)",
+      "name": "Mete Marcha (Chrome Persistent)",
       "request": "launch",
       "type": "dart",
       "args": [

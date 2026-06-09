@@ -360,7 +360,7 @@ final automaticInsightsProvider = Provider<List<WorkoutInsight>>((ref) {
 
   if (completedSessions == 0) {
     insights.add(WorkoutInsight(
-      text: 'Bem-vindo ao MeteMacha! Inicie e conclua seu primeiro treino para começar a gerar insights automáticos de volume, recordes e consistência. 🚀',
+      text: 'Bem-vindo ao Mete Marcha! Inicie e conclua seu primeiro treino para começar a gerar insights automáticos de volume, recordes e consistência. 🚀',
       icon: Icons.rocket_launch_rounded,
       color: Colors.cyanAccent,
       type: 'neutral',

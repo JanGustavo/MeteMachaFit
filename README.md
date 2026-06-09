@@ -62,7 +62,7 @@ Tela 1
 
 Introdução
 
-🏋️ MeteMacha
+🏋️ Mete Marcha
 
 Acompanhe treinos
 Registre cargas

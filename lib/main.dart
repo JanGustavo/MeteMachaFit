@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
     return UncontrolledProviderScope(
       container: activeContainer,
       child: MaterialApp(
-        title: 'MeteMacha',
+        title: 'Mete Marcha',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,
         navigatorKey: navigatorKey,

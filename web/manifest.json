@@ -1,11 +1,11 @@
 {
-    "name": "MeteMacha",
-    "short_name": "MeteMacha",
+    "name": "Mete Marcha",
+    "short_name": "Mete Marcha",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0D0D0D",
     "theme_color": "#D32F2F",
-    "description": "MeteMacha - Foco, consistência e evolução no treino.",
+    "description": "Mete Marcha - Foco, consistência e evolução no treino.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

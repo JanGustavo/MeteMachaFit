@@ -55,7 +55,7 @@ class SplitSelectionPage extends ConsumerWidget {
                     ),
                     const SizedBox(width: 12),
                     const Text(
-                      'MeteMacha',
+                      'Mete Marcha',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,

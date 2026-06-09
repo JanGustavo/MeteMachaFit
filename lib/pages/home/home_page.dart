@@ -216,7 +216,7 @@ class _TreinoTab extends ConsumerWidget {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('MeteMacha'),
+            Text('Mete Marcha'),
             SizedBox(width: 8),
             StreakBadge(style: StreakStyle.appBar),
           ],

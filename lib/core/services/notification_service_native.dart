@@ -103,7 +103,7 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: 999,
-      title: 'MeteMacha 🏋️',
+      title: 'Mete Marcha 🏋️',
       body: 'Descanso ativo: $timeStr restante',
       notificationDetails: platformDetails,
     );
@@ -176,7 +176,7 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: 777,
-      title: 'MeteMacha Rádio ⚡',
+      title: 'Mete Marcha Rádio ⚡',
       body: '$channelName: ${isPlaying ? "Tocando" : "Pausado"}',
       notificationDetails: platformDetails,
     );
