@@ -14,8 +14,8 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify that the splash page is rendered and contains the START button and title.
-    expect(find.text('START'), findsOneWidget);
-    expect(find.text('GYM\nTRACKER'), findsOneWidget);
+    // Verify that the splash page is rendered and contains the METE MARCHA! button and title.
+    expect(find.text('METE MARCHA!'), findsOneWidget);
+    expect(find.text('METE\nMACHA'), findsOneWidget);
   });
 }
