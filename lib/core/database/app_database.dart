@@ -231,7 +231,20 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  Future<void> deleteUnusedExercises() async {
+    final dayExs = await db.select(db.workoutDayExercises).get();
+    final logExs = await db.select(db.exerciseLogs).get();
+    final usedIds = {
+      ...dayExs.map((e) => e.exerciseId),
+      ...logExs.map((e) => e.exerciseId),
+    };
 
+    final query = delete(exercises);
+    if (usedIds.isNotEmpty) {
+      query.where((e) => e.id.isNotIn(usedIds.toList()));
+    }
+    await query.go();
+  }
 
   // ── Day exercise links ──────────────────────────────────────────
 

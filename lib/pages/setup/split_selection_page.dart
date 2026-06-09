@@ -588,6 +588,7 @@ class SplitSelectionPage extends ConsumerWidget {
   void _showImportJsonDialog(BuildContext context, WidgetRef ref) {
     final textCtrl = TextEditingController();
     bool showInstructions = false;
+    bool clearUnused = true;
 
     showDialog(
       context: context,
@@ -703,6 +704,31 @@ class SplitSelectionPage extends ConsumerWidget {
                     alignLabelWithHint: true,
                   ),
                 ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: Checkbox(
+                        value: clearUnused,
+                        activeColor: AppColors.primary,
+                        onChanged: (val) {
+                          setState(() {
+                            clearUnused = val ?? false;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Limpar biblioteca (remove exercícios padrão não utilizados)',
+                        style: TextStyle(fontSize: 13, color: AppColors.onBackground),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -736,6 +762,10 @@ class SplitSelectionPage extends ConsumerWidget {
 
                   final db = ref.read(databaseProvider);
                   await db.transaction(() async {
+                    if (clearUnused) {
+                      await ref.read(exerciseDaoProvider).deleteUnusedExercises();
+                    }
+
                     final splitId = await ref.read(workoutDaoProvider).insertSplit(
                           WorkoutSplitsCompanion.insert(
                             tipo: data['tipo'] ?? 'CUSTOM',
