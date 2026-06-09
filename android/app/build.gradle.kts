@@ -28,11 +28,6 @@ android {
                     storeFile = file(storeFilePath)
                 }
                 storePassword = keystoreProperties.getProperty("storePassword") ?: ""
-            } else {
-                keyAlias = signingConfigs.getByName("debug").keyAlias
-                keyPassword = signingConfigs.getByName("debug").keyPassword
-                storeFile = signingConfigs.getByName("debug").storeFile
-                storePassword = signingConfigs.getByName("debug").storePassword
             }
         }
     }
@@ -60,7 +55,12 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            val keystorePropertiesFile = rootProject.file("key.properties")
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
