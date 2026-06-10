@@ -111,7 +111,7 @@ class NotificationService {
 
   Future<void> scheduleRestEndedNotification(int secondsDelay) async {
     // Cancela qualquer alarme agendado anteriormente com esse id
-    await _notificationsPlugin.cancel(998);
+    await _notificationsPlugin.cancel(id: 998);
 
     final scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(seconds: secondsDelay));
 
@@ -131,18 +131,17 @@ class NotificationService {
     );
 
     await _notificationsPlugin.zonedSchedule(
-      998,
-      'Descanso Concluído! 🔥',
-      'Hora de meter marcha na próxima série!',
-      scheduledDate,
-      platformDetails,
+      id: 998,
+      title: 'Descanso Concluído! 🔥',
+      body: 'Hora de meter marcha na próxima série!',
+      scheduledDate: scheduledDate,
+      notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
   Future<void> showRestEnded() async {
-    await _notificationsPlugin.cancel(999); // Limpa o cronômetro ativo
+    await _notificationsPlugin.cancel(id: 999); // Limpa o cronômetro ativo
 
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'rest_timer_ended_channel',
@@ -168,8 +167,8 @@ class NotificationService {
   }
 
   Future<void> cancelNotification() async {
-    await _notificationsPlugin.cancel(999);
-    await _notificationsPlugin.cancel(998);
+    await _notificationsPlugin.cancel(id: 999);
+    await _notificationsPlugin.cancel(id: 998);
   }
 
   Future<void> showMusicNotification(String channelName, bool isPlaying) async {

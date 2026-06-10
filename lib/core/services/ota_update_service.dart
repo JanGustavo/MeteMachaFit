@@ -169,19 +169,20 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
                 _statusMessage = 'Iniciando instalação...';
                 _progress = '100';
                 break;
-              case OtaStatus.ALREADY_UP_TO_DATE:
-                _statusMessage = 'O aplicativo já está atualizado.';
+              case OtaStatus.INSTALLATION_DONE:
+                _statusMessage = 'Instalação concluída.';
                 break;
-              case OtaStatus.ERROR:
-                _isError = true;
-                _statusMessage = 'Erro no download. Verifique sua conexão.';
+              case OtaStatus.CANCELED:
+                _statusMessage = 'Download cancelado.';
                 break;
               default:
+                _isError = true;
+                _statusMessage = 'Erro no download. Verifique sua conexão.';
                 break;
             }
           });
 
-          if (event.status == OtaStatus.INSTALLING || event.status == OtaStatus.ALREADY_UP_TO_DATE) {
+          if (event.status == OtaStatus.INSTALLING || event.status == OtaStatus.INSTALLATION_DONE) {
             Future.delayed(const Duration(seconds: 1), () {
               if (mounted) Navigator.pop(context);
             });
