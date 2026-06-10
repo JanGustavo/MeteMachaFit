@@ -128,7 +128,9 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
                               const _SectionLabel('EVOLUÇÃO DE CARGAS'),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<int>(
-                                value: _selectedExerciseIdForEvolution,
+                                value: exercises.any((e) => e.id == _selectedExerciseIdForEvolution)
+                                    ? _selectedExerciseIdForEvolution
+                                    : null,
                                 isExpanded: true,
                                 decoration: const InputDecoration(
                                   labelText: 'Filtrar Exercício',
@@ -630,7 +632,20 @@ class _ExerciseVolumeChart extends StatelessWidget {
       return FlSpot(e.key.toDouble(), vol);
     }).toList();
 
-    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.15;
+    if (spots.isEmpty) {
+      return const SizedBox(
+        height: 130,
+        child: Center(
+          child: Text(
+            'Nenhum volume de treino registrado.',
+            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+          ),
+        ),
+      );
+    }
+
+    final maxVal = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+    final maxY = maxVal > 0 ? maxVal * 1.15 : 10.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1398,8 +1413,8 @@ class _LoadEvolutionChart extends StatelessWidget {
     final Map<int, DateTime> sessionDates = {};
     for (final log in exLogs) {
       final date = DateTime.tryParse(log.data) ?? DateTime.now();
-      final currentMax = maxWeightPerSession[log.sessionId] ?? 0.0;
-      if (log.peso > currentMax) {
+      final currentMax = maxWeightPerSession[log.sessionId];
+      if (currentMax == null || log.peso > currentMax) {
         maxWeightPerSession[log.sessionId] = log.peso;
         sessionDates[log.sessionId] = date;
       }
@@ -1413,8 +1428,22 @@ class _LoadEvolutionChart extends StatelessWidget {
       return FlSpot(e.key.toDouble(), maxWeightPerSession[sessionId] ?? 0.0);
     }).toList();
 
-    final minY = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b) * 0.9;
-    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.1;
+    if (spots.isEmpty) {
+      return const SizedBox(
+        height: 120,
+        child: Center(
+          child: Text(
+            'Histórico insuficiente para este exercício.',
+            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+          ),
+        ),
+      );
+    }
+
+    final minVal = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
+    final maxVal = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+    final minY = minVal > 0 ? minVal * 0.9 : 0.0;
+    final maxY = maxVal > 0 ? maxVal * 1.1 : 10.0;
 
     return SizedBox(
       height: 130,
@@ -1521,6 +1550,7 @@ class _PersonalRecordsList extends StatelessWidget {
         repsAtMax: log.repeticoes,
         estimated1RM: oneRepMax,
         date: DateTime.tryParse(log.data) ?? DateTime.now(),
+        equipamento: ex.equipamento,
       );
     }).whereType<_RecordItem>().toList()
       ..sort((a, b) => b.maxWeight.compareTo(a.maxWeight));
@@ -1549,6 +1579,7 @@ class _RecordItem extends StatelessWidget {
   final int repsAtMax;
   final double estimated1RM;
   final DateTime date;
+  final String? equipamento;
 
   const _RecordItem({
     required this.exerciseName,
@@ -1556,6 +1587,7 @@ class _RecordItem extends StatelessWidget {
     required this.repsAtMax,
     required this.estimated1RM,
     required this.date,
+    this.equipamento,
   });
 
   @override
@@ -1570,13 +1602,19 @@ class _RecordItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           onTap: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            
+            final isBodyweight = equipamento?.trim().toLowerCase() == 'peso corporal';
+            final textMsg = isBodyweight
+                ? '1RM Estimada (Peso Corporal): Para exercícios livres, a carga considerada é a fração do seu peso corporal de fato ativada (ex: Flexão = 65%, Barra = 100%). A 1RM é estimada pela fórmula científica de Epley: Carga Efetiva × (1 + Reps / 30). Este cálculo é amplamente embasado na fisiologia do exercício (Epley, 1985) para estimar com segurança a força máxima sem os riscos de lesão de um teste de carga física real.'
+                : '1RM Estimada (One-Rep Max): A carga máxima teórica que você consegue levantar para 1 repetição, estimada pela fórmula clássica de Epley: Peso × (1 + Reps / 30). Validada na literatura científica (Epley, 1985) para prever a capacidade máxima de força a partir de séries submáximas realizadas até a falha.';
+
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  '1RM Estimada (One-Rep Max): A carga máxima teórica que você consegue levantar para 1 repetição, estimada pela fórmula de Epley: Peso × (1 + Reps / 30).',
-                  style: TextStyle(fontSize: 13),
+                  textMsg,
+                  style: const TextStyle(fontSize: 13),
                 ),
-                duration: Duration(seconds: 4),
+                duration: const Duration(seconds: 6),
               ),
             );
           },
@@ -1610,8 +1648,8 @@ class _GoalsManager extends ConsumerWidget {
 
     final Map<int, double> maxLoads = {};
     for (final log in logs) {
-      final currentMax = maxLoads[log.exerciseId] ?? 0.0;
-      if (log.peso > currentMax) {
+      final currentMax = maxLoads[log.exerciseId];
+      if (currentMax == null || log.peso > currentMax) {
         maxLoads[log.exerciseId] = log.peso;
       }
     }
@@ -1886,7 +1924,7 @@ class _GoalsManager extends ConsumerWidget {
                   )
                 else
                   DropdownButtonFormField<Exercise>(
-                    value: selectedExercise,
+                    value: exercises.contains(selectedExercise) ? selectedExercise : null,
                     dropdownColor: AppColors.card,
                     borderRadius: BorderRadius.circular(16),
                     decoration: InputDecoration(
@@ -2268,7 +2306,9 @@ class _MuscleFocusChart extends StatelessWidget {
       }
     }
 
-    if (muscleVolumes.isEmpty) {
+    final totalVol = muscleVolumes.values.fold<double>(0.0, (sum, val) => sum + val);
+
+    if (muscleVolumes.isEmpty || totalVol == 0.0) {
       return const SizedBox(
         height: 120,
         child: Center(
@@ -2280,8 +2320,6 @@ class _MuscleFocusChart extends StatelessWidget {
         ),
       );
     }
-
-    final totalVol = muscleVolumes.values.fold<double>(0.0, (sum, val) => sum + val);
     
     // Sort muscle groups by volume desc
     final sortedEntries = muscleVolumes.entries.toList()

@@ -97,7 +97,7 @@ class WorkoutDayExercises extends Table {
 class WorkoutSessions extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  IntColumn get dayId => integer().references(WorkoutDays, #id)();
+  IntColumn get dayId => integer().nullable().references(WorkoutDays, #id)();
 
   /// ISO 8601 — "2025-06-07T08:30:00.000"
   TextColumn get data => text()();
@@ -315,8 +315,10 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase> with _$WorkoutDaoMixin {
             ..orderBy([(d) => OrderingTerm.asc(d.letra)]))
           .watch();
 
-  Future<WorkoutDay?> getDayById(int id) =>
-      (select(workoutDays)..where((d) => d.id.equals(id))).getSingleOrNull();
+  Future<WorkoutDay?> getDayById(int? id) {
+    if (id == null) return Future.value(null);
+    return (select(workoutDays)..where((d) => d.id.equals(id))).getSingleOrNull();
+  }
 
   Future<int> insertDay(WorkoutDaysCompanion entry) =>
       into(workoutDays).insert(entry);
@@ -389,11 +391,10 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase> with _$WorkoutDaoMixin {
       }
 
       for (final day in days) {
-        final sessions = await (select(workoutSessions)..where((s) => s.dayId.equals(day.id))).get();
-        for (final session in sessions) {
-          await (delete(exerciseLogs)..where((l) => l.sessionId.equals(session.id))).go();
-          await (delete(workoutSessions)..where((s) => s.id.equals(session.id))).go();
-        }
+        // Dissocia as sessões concluídas deste dia para preservá-las no histórico e calendário
+        await (update(workoutSessions)..where((s) => s.dayId.equals(day.id))).write(
+          const WorkoutSessionsCompanion(dayId: Value(null)),
+        );
         await (delete(workoutDayExercises)..where((de) => de.dayId.equals(day.id))).go();
         await (delete(workoutDays)..where((d) => d.id.equals(day.id))).go();
       }
@@ -792,7 +793,7 @@ class AppDatabase extends _$AppDatabase {
   late final ProfileDao profileDao = ProfileDao(this);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -832,6 +833,42 @@ class AppDatabase extends _$AppDatabase {
             }
             if (from < 7) {
               await m.addColumn(exercises, exercises.observacoes);
+            }
+            if (from < 8) {
+              // Migração para tornar dayId em workout_sessions nullable
+              // Também recria a tabela exercise_logs para restaurar a constraint que aponta para workout_sessions
+              await customStatement('PRAGMA foreign_keys = OFF;');
+              await customStatement('ALTER TABLE workout_sessions RENAME TO workout_sessions_old;');
+              await customStatement('ALTER TABLE exercise_logs RENAME TO exercise_logs_old;');
+              
+              await m.createTable(workoutSessions);
+              await m.createTable(exerciseLogs);
+              
+              await customStatement(
+                'INSERT INTO workout_sessions (id, day_id, data, status, duracao_segundos) '
+                'SELECT id, day_id, data, status, duracao_segundos FROM workout_sessions_old;'
+              );
+              await customStatement(
+                'INSERT INTO exercise_logs (id, exercise_id, session_id, data, peso, repeticoes, serie, lado, concluido, equipamento, observacoes) '
+                'SELECT id, exercise_id, session_id, data, peso, repeticoes, serie, lado, concluido, equipamento, observacoes FROM exercise_logs_old;'
+              );
+              
+              await customStatement('DROP TABLE workout_sessions_old;');
+              await customStatement('DROP TABLE exercise_logs_old;');
+              await customStatement('PRAGMA foreign_keys = ON;');
+            }
+            if (from < 9) {
+              // Correção para bancos que atualizaram para a versão 8 e ficaram com a constraint da exercise_logs quebrada
+              await customStatement('PRAGMA foreign_keys = OFF;');
+              await customStatement('DROP TABLE IF EXISTS exercise_logs_old;');
+              await customStatement('ALTER TABLE exercise_logs RENAME TO exercise_logs_old;');
+              await m.createTable(exerciseLogs);
+              await customStatement(
+                'INSERT INTO exercise_logs (id, exercise_id, session_id, data, peso, repeticoes, serie, lado, concluido, equipamento, observacoes) '
+                'SELECT id, exercise_id, session_id, data, peso, repeticoes, serie, lado, concluido, equipamento, observacoes FROM exercise_logs_old;'
+              );
+              await customStatement('DROP TABLE exercise_logs_old;');
+              await customStatement('PRAGMA foreign_keys = ON;');
             }
           }
         },

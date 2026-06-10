@@ -502,7 +502,7 @@ class _ActiveSessionCard extends ConsumerWidget {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => WorkoutPage(
-                              dayId: session.dayId,
+                              dayId: session.dayId ?? 0,
                               dayName: name,
                               sessionId: session.id,
                             ),
@@ -717,7 +717,7 @@ class _DayListTile extends ConsumerWidget {
                               .read(workoutDaoProvider)
                               .insertSession(
                                 WorkoutSessionsCompanion.insert(
-                                  dayId: day.id,
+                                  dayId: Value(day.id),
                                   data: DateTime.now().toIso8601String(),
                                   status: const Value('em_andamento'),
                                 ),
@@ -768,7 +768,7 @@ class _DayListTile extends ConsumerWidget {
               // Inicia novo treino
               final sessionId = await ref.read(workoutDaoProvider).insertSession(
                     WorkoutSessionsCompanion.insert(
-                      dayId: day.id,
+                      dayId: Value(day.id),
                       data: DateTime.now().toIso8601String(),
                       status: const Value('em_andamento'),
                     ),

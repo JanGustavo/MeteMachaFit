@@ -1427,9 +1427,9 @@ class $WorkoutSessionsTable extends WorkoutSessions
   static const VerificationMeta _dayIdMeta = const VerificationMeta('dayId');
   @override
   late final GeneratedColumn<int> dayId = GeneratedColumn<int>(
-      'day_id', aliasedName, false,
+      'day_id', aliasedName, true,
       type: DriftSqlType.int,
-      requiredDuringInsert: true,
+      requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES workout_days (id)'));
   static const VerificationMeta _dataMeta = const VerificationMeta('data');
@@ -1469,8 +1469,6 @@ class $WorkoutSessionsTable extends WorkoutSessions
     if (data.containsKey('day_id')) {
       context.handle(
           _dayIdMeta, dayId.isAcceptableOrUnknown(data['day_id']!, _dayIdMeta));
-    } else if (isInserting) {
-      context.missing(_dayIdMeta);
     }
     if (data.containsKey('data')) {
       context.handle(
@@ -1500,7 +1498,7 @@ class $WorkoutSessionsTable extends WorkoutSessions
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       dayId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}day_id'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}day_id']),
       data: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}data'])!,
       status: attachedDatabase.typeMapping
@@ -1518,7 +1516,7 @@ class $WorkoutSessionsTable extends WorkoutSessions
 
 class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
   final int id;
-  final int dayId;
+  final int? dayId;
 
   /// ISO 8601 — "2025-06-07T08:30:00.000"
   final String data;
@@ -1530,7 +1528,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
   final int? duracaoSegundos;
   const WorkoutSession(
       {required this.id,
-      required this.dayId,
+      this.dayId,
       required this.data,
       required this.status,
       this.duracaoSegundos});
@@ -1538,7 +1536,9 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['day_id'] = Variable<int>(dayId);
+    if (!nullToAbsent || dayId != null) {
+      map['day_id'] = Variable<int>(dayId);
+    }
     map['data'] = Variable<String>(data);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || duracaoSegundos != null) {
@@ -1550,7 +1550,8 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
   WorkoutSessionsCompanion toCompanion(bool nullToAbsent) {
     return WorkoutSessionsCompanion(
       id: Value(id),
-      dayId: Value(dayId),
+      dayId:
+          dayId == null && nullToAbsent ? const Value.absent() : Value(dayId),
       data: Value(data),
       status: Value(status),
       duracaoSegundos: duracaoSegundos == null && nullToAbsent
@@ -1564,7 +1565,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return WorkoutSession(
       id: serializer.fromJson<int>(json['id']),
-      dayId: serializer.fromJson<int>(json['dayId']),
+      dayId: serializer.fromJson<int?>(json['dayId']),
       data: serializer.fromJson<String>(json['data']),
       status: serializer.fromJson<String>(json['status']),
       duracaoSegundos: serializer.fromJson<int?>(json['duracaoSegundos']),
@@ -1575,7 +1576,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'dayId': serializer.toJson<int>(dayId),
+      'dayId': serializer.toJson<int?>(dayId),
       'data': serializer.toJson<String>(data),
       'status': serializer.toJson<String>(status),
       'duracaoSegundos': serializer.toJson<int?>(duracaoSegundos),
@@ -1584,13 +1585,13 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
 
   WorkoutSession copyWith(
           {int? id,
-          int? dayId,
+          Value<int?> dayId = const Value.absent(),
           String? data,
           String? status,
           Value<int?> duracaoSegundos = const Value.absent()}) =>
       WorkoutSession(
         id: id ?? this.id,
-        dayId: dayId ?? this.dayId,
+        dayId: dayId.present ? dayId.value : this.dayId,
         data: data ?? this.data,
         status: status ?? this.status,
         duracaoSegundos: duracaoSegundos.present
@@ -1636,7 +1637,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
 
 class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
   final Value<int> id;
-  final Value<int> dayId;
+  final Value<int?> dayId;
   final Value<String> data;
   final Value<String> status;
   final Value<int?> duracaoSegundos;
@@ -1649,12 +1650,11 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
   });
   WorkoutSessionsCompanion.insert({
     this.id = const Value.absent(),
-    required int dayId,
+    this.dayId = const Value.absent(),
     required String data,
     this.status = const Value.absent(),
     this.duracaoSegundos = const Value.absent(),
-  })  : dayId = Value(dayId),
-        data = Value(data);
+  }) : data = Value(data);
   static Insertable<WorkoutSession> custom({
     Expression<int>? id,
     Expression<int>? dayId,
@@ -1673,7 +1673,7 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
 
   WorkoutSessionsCompanion copyWith(
       {Value<int>? id,
-      Value<int>? dayId,
+      Value<int?>? dayId,
       Value<String>? data,
       Value<String>? status,
       Value<int?>? duracaoSegundos}) {
@@ -4525,7 +4525,7 @@ typedef $$WorkoutDayExercisesTableProcessedTableManager = ProcessedTableManager<
 typedef $$WorkoutSessionsTableCreateCompanionBuilder = WorkoutSessionsCompanion
     Function({
   Value<int> id,
-  required int dayId,
+  Value<int?> dayId,
   required String data,
   Value<String> status,
   Value<int?> duracaoSegundos,
@@ -4533,7 +4533,7 @@ typedef $$WorkoutSessionsTableCreateCompanionBuilder = WorkoutSessionsCompanion
 typedef $$WorkoutSessionsTableUpdateCompanionBuilder = WorkoutSessionsCompanion
     Function({
   Value<int> id,
-  Value<int> dayId,
+  Value<int?> dayId,
   Value<String> data,
   Value<String> status,
   Value<int?> duracaoSegundos,
@@ -4548,9 +4548,9 @@ final class $$WorkoutSessionsTableReferences extends BaseReferences<
       db.workoutDays.createAlias(
           $_aliasNameGenerator(db.workoutSessions.dayId, db.workoutDays.id));
 
-  $$WorkoutDaysTableProcessedTableManager get dayId {
-    final $_column = $_itemColumn<int>('day_id')!;
-
+  $$WorkoutDaysTableProcessedTableManager? get dayId {
+    final $_column = $_itemColumn<int>('day_id');
+    if ($_column == null) return null;
     final manager = $$WorkoutDaysTableTableManager($_db, $_db.workoutDays)
         .filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_dayIdTable($_db));
@@ -4770,7 +4770,7 @@ class $$WorkoutSessionsTableTableManager extends RootTableManager<
               $$WorkoutSessionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int> dayId = const Value.absent(),
+            Value<int?> dayId = const Value.absent(),
             Value<String> data = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<int?> duracaoSegundos = const Value.absent(),
@@ -4784,7 +4784,7 @@ class $$WorkoutSessionsTableTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            required int dayId,
+            Value<int?> dayId = const Value.absent(),
             required String data,
             Value<String> status = const Value.absent(),
             Value<int?> duracaoSegundos = const Value.absent(),

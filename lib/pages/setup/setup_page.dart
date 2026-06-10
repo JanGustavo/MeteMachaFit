@@ -432,11 +432,9 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
                   const WeeklySchedulesCompanion(dayId: Value(null)),
                 );
                 await (db.delete(db.workoutDayExercises)..where((de) => de.dayId.equals(dayId))).go();
-                final sessions = await (db.select(db.workoutSessions)..where((s) => s.dayId.equals(dayId))).get();
-                for (final session in sessions) {
-                  await (db.delete(db.exerciseLogs)..where((l) => l.sessionId.equals(session.id))).go();
-                  await (db.delete(db.workoutSessions)..where((s) => s.id.equals(session.id))).go();
-                }
+                await (db.update(db.workoutSessions)..where((s) => s.dayId.equals(dayId))).write(
+                  const WorkoutSessionsCompanion(dayId: Value(null)),
+                );
                 await (db.delete(db.workoutDays)..where((d) => d.id.equals(dayId))).go();
               });
 
@@ -934,16 +932,17 @@ void _showAddExerciseSheet(
                       decoration:
                           const InputDecoration(labelText: 'Grupo Muscular'),
                       dropdownColor: AppColors.card,
-                      items: [
+                      items: {
+                        if (group != null) group!,
                         'Peito',
                         'Costas',
                         'Ombro',
-                        'Tr\u00edceps',
-                        'B\u00edceps',
+                        'Tríceps',
+                        'Bíceps',
                         'Perna',
                         'Core',
-                        'Gl\u00fateo'
-                      ]
+                        'Glúteo'
+                      }
                           .map(
                               (g) => DropdownMenuItem(value: g, child: Text(g)))
                           .toList(),
@@ -957,7 +956,10 @@ void _showAddExerciseSheet(
                       decoration:
                           const InputDecoration(labelText: 'Equipamento'),
                       dropdownColor: AppColors.card,
-                      items: equipmentOptions
+                      items: {
+                        if (equipment != null) equipment!,
+                        ...equipmentOptions,
+                      }
                           .map(
                             (option) => DropdownMenuItem(
                               value: option,

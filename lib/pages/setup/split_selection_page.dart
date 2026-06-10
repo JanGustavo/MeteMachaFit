@@ -1092,13 +1092,13 @@ Regras:
         'Authorization': 'Bearer $apiKey',
       },
       body: jsonEncode({
-        'model': 'llama-3.1-8b-instant',
+        'model': 'llama-3.3-70b-versatile',
         'messages': [
           {'role': 'system', 'content': systemPrompt},
           {'role': 'user', 'content': rawText}
         ],
         'temperature': 0.1,
-        'max_tokens': 2000,
+        'max_tokens': 4000,
         'response_format': {'type': 'json_object'},
       }),
     );

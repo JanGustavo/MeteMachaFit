@@ -255,82 +255,85 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  // Card 1: Streak
-                  Expanded(
-                    child: Card(
-                      margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const StreakBadge(style: StreakStyle.profile),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Meta: $weeklyTarget ${weeklyTarget == 1 ? "treino" : "treinos"}/sem',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppColors.onSurface,
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Card 1: Streak
+                    Expanded(
+                      child: Card(
+                        margin: EdgeInsets.zero,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const StreakBadge(style: StreakStyle.profile),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Meta: $weeklyTarget ${weeklyTarget == 1 ? "treino" : "treinos"}/sem',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.onSurface,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Card 2: Evolution
-                  Expanded(
-                    child: Card(
-                      margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'FORÇA GERAL',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.onSurface,
-                                    letterSpacing: 1.0,
+                    const SizedBox(width: 8),
+                    // Card 2: Evolution
+                    Expanded(
+                      child: Card(
+                        margin: EdgeInsets.zero,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'FORÇA GERAL',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.onSurface,
+                                      letterSpacing: 1.0,
+                                    ),
                                   ),
-                                ),
-                                Icon(
-                                  Icons.trending_up_rounded,
-                                  color: AppColors.success,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '${evolution >= 0 ? "+" : ""}${evolution.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: evolution >= 0 ? AppColors.success : Colors.redAccent),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Carga média desde: $firstUseDate',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppColors.onSurface,
+                                  Icon(
+                                    Icons.trending_up_rounded,
+                                    color: AppColors.success,
+                                    size: 20,
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              Text(
+                                '${evolution >= 0 ? "+" : ""}${evolution.toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: evolution >= 0 ? AppColors.success : Colors.redAccent),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Carga média desde: $firstUseDate',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

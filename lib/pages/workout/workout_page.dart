@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/constants/equipment_options.dart';
@@ -175,6 +176,12 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
     final exerciseSessionLogs =
         currentLogs.where((l) => l.exerciseId == ex.id).toList();
 
+    final isBodyWeight = ex.equipamento.trim().toLowerCase() == 'peso corporal';
+
+    // Busca o peso do perfil diretamente do banco de dados (evita race conditions com providers reativos em carregamento)
+    final profile = await ref.read(profileDaoProvider).getProfile();
+    final userWeight = profile?.pesoAtual ?? 70.0;
+
     setState(() {
       _prevLogs = prev;
       _currentSerie = exerciseSessionLogs.length + 1;
@@ -192,13 +199,24 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
       _equipamentoSelecionado = ex.equipamento;
 
       if (exerciseSessionLogs.isNotEmpty) {
-        _pesoCtrl.text = exerciseSessionLogs.last.peso.toString();
+        final lastPeso = exerciseSessionLogs.last.peso;
+        _pesoCtrl.text = lastPeso % 1 == 0
+            ? lastPeso.toInt().toString()
+            : lastPeso.toString();
         _repsCtrl.text = exerciseSessionLogs.last.repeticoes.toString();
       } else if (prev.isNotEmpty) {
         final totalPeso = prev.map((l) => l.peso).fold<double>(0.0, (a, b) => a + b);
         final totalReps = prev.map((l) => l.repeticoes).fold<int>(0, (a, b) => a + b);
-        final avgPeso = totalPeso / prev.length;
+        double avgPeso = totalPeso / prev.length;
         final avgReps = (totalReps / prev.length).round();
+
+        if (isBodyWeight && avgPeso <= 0.0) {
+          avgPeso = _obterPesoCorporalEstimado(
+            pesoUsuario: userWeight,
+            nomeExercicio: ex.nome,
+            grupoMuscular: ex.grupoMuscular,
+          );
+        }
 
         final pesoStr = avgPeso % 1 == 0 
             ? avgPeso.toInt().toString() 
@@ -207,10 +225,96 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
         _pesoCtrl.text = pesoStr;
         _repsCtrl.text = avgReps.toString();
       } else {
-        _pesoCtrl.text = '0';
+        if (isBodyWeight) {
+          final estWeight = _obterPesoCorporalEstimado(
+            pesoUsuario: userWeight,
+            nomeExercicio: ex.nome,
+            grupoMuscular: ex.grupoMuscular,
+          );
+          _pesoCtrl.text = estWeight % 1 == 0
+              ? estWeight.toInt().toString()
+              : estWeight.toStringAsFixed(1);
+        } else {
+          _pesoCtrl.text = '0';
+        }
         _repsCtrl.text = '10';
       }
     });
+
+    if (exerciseSessionLogs.isEmpty && isBodyWeight) {
+      final estWeight = _obterPesoCorporalEstimado(
+        pesoUsuario: userWeight,
+        nomeExercicio: ex.nome,
+        grupoMuscular: ex.grupoMuscular,
+      );
+      
+      final double pct;
+      final nome = ex.nome.toLowerCase();
+      final grupo = ex.grupoMuscular.toLowerCase();
+      if (nome.contains('flexão') || nome.contains('pushup') || nome.contains('push-up')) {
+        pct = 65;
+      } else if (grupo == 'core' || nome.contains('abdominal') || nome.contains('prancha') || nome.contains('crunch')) {
+        pct = 35;
+      } else if (nome.contains('agachamento') || nome.contains('squat')) {
+        pct = 60;
+      } else {
+        pct = 100;
+      }
+
+      final estWeightStr = estWeight % 1 == 0
+          ? estWeight.toInt().toString()
+          : estWeight.toStringAsFixed(1);
+
+      final userWeightStr = userWeight % 1 == 0
+          ? userWeight.toInt().toString()
+          : userWeight.toStringAsFixed(1);
+
+      // Usando delay de 500ms para garantir que a transição de tela terminou e o ScaffoldMessenger encontre o Scaffold montado
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Exercício de Peso Corporal: peso inicial estimado em ${pct.toInt()}% do seu peso ($userWeightStr kg) = $estWeightStr kg.',
+                style: const TextStyle(fontSize: 13),
+              ),
+              duration: const Duration(seconds: 4),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  double _obterPesoCorporalEstimado({
+    required double pesoUsuario,
+    required String nomeExercicio,
+    required String grupoMuscular,
+  }) {
+    final nome = nomeExercicio.toLowerCase();
+    final grupo = grupoMuscular.toLowerCase();
+
+    // 1. Flexão de braço (Push-ups)
+    if (nome.contains('flexão') || nome.contains('pushup') || nome.contains('push-up')) {
+      if (!nome.contains('quadril') && !nome.contains('plantar') && !nome.contains('perna') && !nome.contains('joelho')) {
+        return pesoUsuario * 0.65;
+      }
+    }
+
+    // 2. Abdominais / Core (Crunches, prancha)
+    if (grupo == 'core' || nome.contains('abdominal') || nome.contains('prancha') || nome.contains('crunch')) {
+      return pesoUsuario * 0.35;
+    }
+
+    // 3. Agachamento livre / corporal (Squats)
+    if (nome.contains('agachamento') || nome.contains('squat')) {
+      return pesoUsuario * 0.60;
+    }
+
+    // 4. Barra fixa, paralelas, etc. (Pull-ups, chin-ups, dips)
+    return pesoUsuario;
   }
 
   // ── Timers ──────────────────────────────────────────────────────
@@ -254,14 +358,51 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
   Future<void> _salvarSerie() async {
     final peso = double.tryParse(_pesoCtrl.text.replaceAll(',', '.')) ?? 0;
     final reps = int.tryParse(_repsCtrl.text) ?? 0;
+
+    if (reps <= 0) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('As repetições devem ser maiores que zero.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (peso <= 0) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('A carga deve ser maior que zero.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     final obs = _obsCtrl.text.trim();
     final logDao = ref.read(logDaoProvider);
     final now = DateTime.now().toIso8601String();
     final Value<String?> valueObs = obs.isNotEmpty ? Value<String?>(obs) : const Value<String?>.absent();
 
-    if (_executandoUnilateral && _lado == 'ambos') {
-      // Grava dois logs: esquerdo e direito
-      for (final l in ['esquerdo', 'direito']) {
+    try {
+      if (_executandoUnilateral && _lado == 'ambos') {
+        // Grava dois logs: esquerdo e direito
+        for (final l in ['esquerdo', 'direito']) {
+          await logDao.insertLog(ExerciseLogsCompanion.insert(
+            exerciseId: _current.id,
+            sessionId: widget.sessionId,
+            data: now,
+            peso: peso,
+            repeticoes: reps,
+            serie: Value(_currentSerie),
+            lado: Value(l),
+            equipamento: Value(_equipamentoSelecionado),
+            observacoes: valueObs,
+          ));
+        }
+      } else {
         await logDao.insertLog(ExerciseLogsCompanion.insert(
           exerciseId: _current.id,
           sessionId: widget.sessionId,
@@ -269,23 +410,24 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
           peso: peso,
           repeticoes: reps,
           serie: Value(_currentSerie),
-          lado: Value(l),
+          lado: Value(_lado),
           equipamento: Value(_equipamentoSelecionado),
           observacoes: valueObs,
         ));
       }
-    } else {
-      await logDao.insertLog(ExerciseLogsCompanion.insert(
-        exerciseId: _current.id,
-        sessionId: widget.sessionId,
-        data: now,
-        peso: peso,
-        repeticoes: reps,
-        serie: Value(_currentSerie),
-        lado: Value(_lado),
-        equipamento: Value(_equipamentoSelecionado),
-        observacoes: valueObs,
-      ));
+    } catch (e, stack) {
+      debugPrint('Erro ao inserir log no banco: $e\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar no banco: $e'),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      }
+      return;
     }
 
     _obsCtrl.clear();
@@ -589,44 +731,53 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                     const Divider(color: Colors.white10, height: 1),
                     const SizedBox(height: 20),
 
-                    // Stats Grid (2 columns x 2 rows)
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.45,
+                    // Stats Rows (Row 1 + Row 2 instead of GridView)
+                    Row(
                       children: [
-                        _buildFinishStatCard(
-                          icon: Icons.timer_rounded,
-                          iconColor: Colors.blueAccent,
-                          label: 'Duração',
-                          value: WeekUtils.formatDuration(_sessionSecs),
+                        Expanded(
+                          child: _buildFinishStatCard(
+                            icon: Icons.timer_rounded,
+                            iconColor: Colors.blueAccent,
+                            label: 'Duração',
+                            value: WeekUtils.formatDuration(_sessionSecs),
+                          ),
                         ),
-                        _buildFinishStatCard(
-                          icon: Icons.fitness_center_rounded,
-                          iconColor: AppColors.primaryLight,
-                          label: 'Exercícios',
-                          value: '$uniqueExercises',
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildFinishStatCard(
+                            icon: Icons.fitness_center_rounded,
+                            iconColor: AppColors.primaryLight,
+                            label: 'Exercícios',
+                            value: '$uniqueExercises',
+                          ),
                         ),
-                        _buildFinishStatCard(
-                          icon: Icons.view_headline_rounded,
-                          iconColor: Colors.purpleAccent,
-                          label: 'Séries',
-                          value: '$totalSets',
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildFinishStatCard(
+                            icon: Icons.view_headline_rounded,
+                            iconColor: Colors.purpleAccent,
+                            label: 'Séries',
+                            value: '$totalSets',
+                          ),
                         ),
-                        _buildFinishStatCard(
-                          icon: Icons.flash_on_rounded,
-                          iconColor: Colors.greenAccent,
-                          label: 'Volume Total',
-                          value: '${totalVolume.toStringAsFixed(0)} kg',
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildFinishStatCard(
+                            icon: Icons.flash_on_rounded,
+                            iconColor: Colors.greenAccent,
+                            label: 'Volume Total',
+                            value: '${totalVolume.toStringAsFixed(0)} kg',
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
 
-                    // Glowing Button to return
+                    // Glowing Button to Share
                     SizedBox(
                       width: double.infinity,
                       child: Container(
@@ -634,15 +785,23 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.2),
-                              blurRadius: 10,
+                              color: AppColors.primary.withOpacity(0.25),
+                              blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).popUntil((route) => route.isFirst);
+                            final dayNameClean = widget.dayName.toLowerCase().contains('treino')
+                                ? widget.dayName
+                                : 'Treino de ${widget.dayName}';
+                            final durationMin = (_sessionSecs / 60).round();
+                            final formattedVolume = _formatVolume(totalVolume);
+                            final shareText =
+                                "Meteu Marcha! 🔥 $dayNameClean concluído: $uniqueExercises ${uniqueExercises == 1 ? 'exercício' : 'exercícios'} | $durationMin min | ${formattedVolume}kg totais. #MeteMarcha";
+                            // ignore: deprecated_member_use
+                            Share.share(shareText);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
@@ -654,10 +813,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
+                              Icon(Icons.share_rounded, size: 18, color: Colors.white),
                               SizedBox(width: 8),
                               Text(
-                                'VOLTAR AO INÍCIO',
+                                'COMPARTILHAR TREINO',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -669,6 +828,43 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    
+                    // Voltar
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            width: 1,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.home_rounded, size: 18, color: AppColors.onSurface),
+                            SizedBox(width: 8),
+                            Text(
+                              'VOLTAR AO INÍCIO',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                letterSpacing: 1,
+                                color: AppColors.onBackground,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -677,6 +873,19 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
         );
       },
     );
+  }
+
+  String _formatVolume(double volume) {
+    final intPart = volume.toInt();
+    final s = intPart.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(s[i]);
+    }
+    return buffer.toString();
   }
 
   Widget _buildFinishStatCard({
@@ -1186,7 +1395,12 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     dropdownColor: AppColors.card,
-                    items: equipmentOptions
+                    items: {
+                      if (_equipamentoSelecionado != null &&
+                          !equipmentOptions.contains(_equipamentoSelecionado))
+                        _equipamentoSelecionado!,
+                      ...equipmentOptions,
+                    }
                         .map(
                           (option) => DropdownMenuItem(
                             value: option,

@@ -113,7 +113,7 @@ class _DayCard extends ConsumerWidget {
           // Cria nova sessão
           final sessionId = await workoutDao.insertSession(
             WorkoutSessionsCompanion.insert(
-              dayId: day.id,
+              dayId: Value(day.id),
               data: DateTime.now().toIso8601String(),
             ),
           );
