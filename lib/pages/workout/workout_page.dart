@@ -1811,6 +1811,7 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
     });
   }
 
+  /*
   Future<void> _saveCustomApp(String name, String package) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('custom_music_app_name', name);
@@ -1820,6 +1821,7 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
       _customAppPackage = package;
     });
   }
+  */
 
   Future<void> _clearCustomApp() async {
     final prefs = await SharedPreferences.getInstance();

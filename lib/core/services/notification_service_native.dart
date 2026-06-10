@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 import '../../main.dart';
 import '../../pages/workout/workout_page.dart';
 import '../providers/rest_timer_provider.dart';
@@ -82,18 +83,17 @@ class NotificationService {
   }
 
   Future<void> showRestTimer(int secondsLeft) async {
-    final minutes = secondsLeft ~/ 60;
-    final seconds = secondsLeft % 60;
-    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'rest_timer_channel',
-      'Cronômetro de Descanso',
-      channelDescription: 'Mostra o tempo restante de descanso',
+      'rest_timer_countdown_channel',
+      'Cronômetro de Descanso (Contagem)',
+      channelDescription: 'Mostra o tempo restante de descanso em tempo real',
       importance: Importance.low,
       priority: Priority.low,
       onlyAlertOnce: true,
-      showWhen: false,
+      showWhen: true,
+      when: DateTime.now().millisecondsSinceEpoch + secondsLeft * 1000,
+      usesChronometer: true,
+      chronometerCountDown: true,
       ongoing: true,
     );
 
@@ -104,18 +104,52 @@ class NotificationService {
     await _notificationsPlugin.show(
       id: 999,
       title: 'Mete Marcha 🏋️',
-      body: 'Descanso ativo: $timeStr restante',
+      body: 'Descanso ativo',
       notificationDetails: platformDetails,
     );
   }
 
-  Future<void> showRestEnded() async {
+  Future<void> scheduleRestEndedNotification(int secondsDelay) async {
+    // Cancela qualquer alarme agendado anteriormente com esse id
+    await _notificationsPlugin.cancel(998);
+
+    final scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(seconds: secondsDelay));
+
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'rest_timer_channel',
-      'Cronômetro de Descanso',
-      channelDescription: 'Mostra o tempo restante de descanso',
-      importance: Importance.high,
-      priority: Priority.high,
+      'rest_timer_ended_channel',
+      'Fim do Descanso (Alerta)',
+      channelDescription: 'Dispara um alerta sonoro e visual ao fim do descanso',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      fullScreenIntent: true,
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await _notificationsPlugin.zonedSchedule(
+      998,
+      'Descanso Concluído! 🔥',
+      'Hora de meter marcha na próxima série!',
+      scheduledDate,
+      platformDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  Future<void> showRestEnded() async {
+    await _notificationsPlugin.cancel(999); // Limpa o cronômetro ativo
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'rest_timer_ended_channel',
+      'Fim do Descanso (Alerta)',
+      channelDescription: 'Dispara um alerta sonoro e visual ao fim do descanso',
+      importance: Importance.max,
+      priority: Priority.max,
       playSound: true,
       enableVibration: true,
       fullScreenIntent: true,
@@ -126,7 +160,7 @@ class NotificationService {
     );
 
     await _notificationsPlugin.show(
-      id: 999,
+      id: 998,
       title: 'Descanso Concluído! 🔥',
       body: 'Hora de meter marcha na próxima série!',
       notificationDetails: platformDetails,
@@ -134,7 +168,8 @@ class NotificationService {
   }
 
   Future<void> cancelNotification() async {
-    await _notificationsPlugin.cancel(id: 999);
+    await _notificationsPlugin.cancel(999);
+    await _notificationsPlugin.cancel(998);
   }
 
   Future<void> showMusicNotification(String channelName, bool isPlaying) async {

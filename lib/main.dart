@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import 'core/theme/app_theme.dart';
 import 'core/services/notification_service.dart';
 import 'core/widgets/global_rest_timer_overlay.dart';
@@ -10,6 +12,7 @@ late final ProviderContainer globalProviderContainer;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   
   globalProviderContainer = ProviderContainer();
 

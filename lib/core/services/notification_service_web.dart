@@ -68,6 +68,10 @@ class NotificationService {
     showNotification('Descanso Concluído! 🔥', 'Hora de meter marcha na próxima série!');
   }
 
+  Future<void> scheduleRestEndedNotification(int secondsDelay) async {
+    // No-op on web
+  }
+
   Future<void> cancelNotification() async {
     // No-op on web
   }

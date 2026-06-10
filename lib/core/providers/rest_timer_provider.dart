@@ -67,6 +67,7 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> with WidgetsBindin
       }
     } else if (_isMinimized && state.isActive) {
       NotificationService().showRestTimer(state.remainingSeconds);
+      NotificationService().scheduleRestEndedNotification(state.remainingSeconds);
     }
   }
 
@@ -90,6 +91,7 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> with WidgetsBindin
 
     if (_isMinimized) {
       NotificationService().showRestTimer(seconds);
+      NotificationService().scheduleRestEndedNotification(seconds);
     }
   }
 
@@ -107,10 +109,6 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> with WidgetsBindin
       _onTimerFinished();
     } else {
       state = state.copyWith(remainingSeconds: difference);
-
-      if (_isMinimized) {
-        NotificationService().showRestTimer(difference);
-      }
     }
   }
 
