@@ -1093,6 +1093,8 @@ Regras Cruciais de Mapeamento:
           {'role': 'user', 'content': rawText}
         ],
         'temperature': 0.1,
+        'max_tokens': 4000,
+        'response_format': {'type': 'json_object'},
       }),
     );
 
