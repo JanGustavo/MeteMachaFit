@@ -109,6 +109,9 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> with WidgetsBindin
       _onTimerFinished();
     } else {
       state = state.copyWith(remainingSeconds: difference);
+      if (_isMinimized) {
+        NotificationService().showRestTimer(difference);
+      }
     }
   }
 

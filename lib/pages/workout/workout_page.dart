@@ -1045,6 +1045,48 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                     ],
                   ),
 
+                  // ── Observações / Biomecânica do Exercício ──
+                  if (ex.observacoes != null && ex.observacoes!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.psychology_alt_rounded, size: 16, color: AppColors.primaryLight),
+                              SizedBox(width: 6),
+                              Text(
+                                'Detalhes & Biomecânica',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            ex.observacoes!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.onBackground,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // ── Desempenho anterior ────────────────────────
                   if (_prevLogs.isNotEmpty) ...[
                     const SizedBox(height: 16),

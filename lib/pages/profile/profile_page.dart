@@ -538,7 +538,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Atualizações OTA',
+                              'Atualizações APP',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

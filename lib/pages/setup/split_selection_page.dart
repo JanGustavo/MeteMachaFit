@@ -672,7 +672,8 @@ class SplitSelectionPage extends ConsumerWidget {
                               '          "equipamento": "Barra", // Livre, Barra, Haltere, Cabo, Máquina, Peso Corporal ou Smith\n'
                               '          "isUnilateral": false,\n'
                               '          "tempoDescansoSegundos": 90,\n'
-                              '          "volume": "4x10"\n'
+                              '          "volume": "4x10",\n'
+                              '          "observacoes": "Dicas de biomecânica ou detalhes adicionais da execução do exercício (ex: Pegada pronada...)" // Pode ser nulo se não houver observações\n'
                               '        }\n'
                               '      ]\n'
                               '    }\n'
@@ -820,6 +821,14 @@ class SplitSelectionPage extends ConsumerWidget {
                         int exId;
                         if (foundEx != null) {
                           exId = foundEx.id;
+                          final jsonObs = exObj['observacoes']?.toString().trim();
+                          if (jsonObs != null && jsonObs.isNotEmpty && (foundEx.observacoes == null || foundEx.observacoes!.isEmpty)) {
+                            await ref.read(exerciseDaoProvider).updateExercise(
+                                  foundEx.copyWith(
+                                    observacoes: Value(jsonObs),
+                                  ),
+                                );
+                          }
                         } else {
                           exId = await ref.read(exerciseDaoProvider).insertExercise(
                                 ExercisesCompanion.insert(
@@ -837,6 +846,7 @@ class SplitSelectionPage extends ConsumerWidget {
                                           90),
                                   volume: Value(exObj['volume']?.toString()),
                                   link: Value(exObj['link']?.toString()),
+                                  observacoes: Value(exObj['observacoes']?.toString()),
                                   vezesFeito: const Value(0),
                                 ),
                               );
@@ -1045,7 +1055,8 @@ O JSON gerado DEVE seguir estritamente a seguinte estrutura:
           "equipamento": "Barra", // DEVE ser um destes exatos valores: Livre, Barra, Haltere, Cabo, Máquina, Peso Corporal, Smith
           "isUnilateral": false, // true se feito um lado de cada vez, false caso contrário
           "tempoDescansoSegundos": 90, // inteiro (tempo de descanso padrão em segundos)
-          "volume": "4x10" // string contendo séries x repetições (ex: "4x10", "3x12", "4x12-10-8")
+          "volume": "4x10", // string contendo séries x repetições (ex: "4x10", "3x12", "4x12-10-8")
+          "observacoes": "Instruções específicas, biomecânica do movimento ou observações sobre a execução (ex: Pegada pronada ou neutra. Estufe o peito...)" // string ou nulo
         }
       ]
     }
@@ -1065,7 +1076,8 @@ Regras Cruciais de Mapeamento:
    - Exercícios com o próprio peso (Flexões de braço, Barra fixa, Abdominais no chão) devem ser "Peso Corporal".
 3. **letra**: Comece no "A" e incremente em ordem alfabética ("A", "B", "C"...) para cada dia sequencial de treino.
 4. **tipo**: Se a rotina tiver 3 dias, o tipo é "ABC". Se tiver 4 dias, "ABCD". Se tiver 5 dias, "ABCDE". Outros números de dias, coloque "CUSTOM".
-5. **Saída**: Retorne APENAS o código JSON puro, sem textos explicativos, saudações ou formatação markdown, apenas o JSON bruto para que eu possa fazer o decode diretamente.
+5. **observacoes**: Se o texto original contiver observações, biomecânica, segredos do shape, dicas de execução ou informações adicionais específicas sobre como executar o exercício, extraia e coloque-as neste campo (ex: 'Pegada pronada ou neutra. Estufe o peito e puxe com os cotovelos...'). Mantenha o texto limpo, sem marcas desnecessárias.
+6. **Saída**: Retorne APENAS o código JSON puro, sem textos explicativos, saudações ou formatação markdown, apenas o JSON bruto para que eu possa fazer o decode diretamente.
 ''';
 
     final response = await http.post(

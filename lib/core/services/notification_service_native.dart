@@ -83,6 +83,11 @@ class NotificationService {
   }
 
   Future<void> showRestTimer(int secondsLeft) async {
+    final minutes = secondsLeft ~/ 60;
+    final seconds = secondsLeft % 60;
+    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    final boldTime = _toUnicodeBold(timeStr);
+
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'rest_timer_countdown_channel',
       'Cronômetro de Descanso (Contagem)',
@@ -103,10 +108,18 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: 999,
-      title: 'Mete Marcha 🏋️',
-      body: 'Descanso ativo',
+      title: '⏱️ $boldTime',
+      body: 'Descanso ativo • Mete Marcha 🏋️',
       notificationDetails: platformDetails,
     );
+  }
+
+  String _toUnicodeBold(String input) {
+    final Map<String, String> boldMap = {
+      '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒',
+      '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗',
+    };
+    return input.split('').map((char) => boldMap[char] ?? char).join();
   }
 
   Future<void> scheduleRestEndedNotification(int secondsDelay) async {

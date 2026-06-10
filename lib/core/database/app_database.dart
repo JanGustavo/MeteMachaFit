@@ -45,6 +45,9 @@ class Exercises extends Table {
 
   /// Incrementado a cada sessão concluída (não a cada série).
   IntColumn get vezesFeito => integer().withDefault(const Constant(0))();
+
+  /// Observações / Dicas de biomecânica para o exercício
+  TextColumn get observacoes => text().nullable()();
 }
 
 /// Divisão de treino: ABC / ABCD / ABCDE / Custom
@@ -789,7 +792,7 @@ class AppDatabase extends _$AppDatabase {
   late final ProfileDao profileDao = ProfileDao(this);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -826,6 +829,9 @@ class AppDatabase extends _$AppDatabase {
             }
             if (from < 6) {
               await m.addColumn(exerciseLogs, exerciseLogs.observacoes);
+            }
+            if (from < 7) {
+              await m.addColumn(exercises, exercises.observacoes);
             }
           }
         },
