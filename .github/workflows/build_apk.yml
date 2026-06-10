@@ -41,9 +41,9 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/flutter-apk/app-release.apk,build/app/outputs/flutter-apk/mete-marcha.apk,build/app/outputs/flutter-apk/mete-marcha-v${{ env.APP_VERSION }}.apk"
-          tag: "latest"
-          name: "Latest Release (Automated Build)"
-          body: "This release is automatically updated with the latest compiled APK on every commit to the main branch."
+          tag: "v${{ env.APP_VERSION }}"
+          name: "Release v${{ env.APP_VERSION }}"
+          body: "Automated release for version v${{ env.APP_VERSION }}."
           allowUpdates: true
           makeLatest: true
           prerelease: false

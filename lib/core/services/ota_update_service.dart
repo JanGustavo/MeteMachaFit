@@ -25,7 +25,10 @@ class OtaUpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
 
-      final response = await http.get(Uri.parse('https://api.github.com/repos/JanGustavo/MeteMachaFit/releases/latest'));
+      final response = await http.get(
+        Uri.parse('https://api.github.com/repos/JanGustavo/MeteMachaFit/releases/latest'),
+        headers: {'User-Agent': 'MeteMachaApp'},
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final tagName = data['tag_name'] as String? ?? 'latest';
