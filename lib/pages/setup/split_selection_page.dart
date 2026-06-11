@@ -601,448 +601,527 @@ class SplitSelectionPage extends ConsumerWidget {
 
   void _showImportJsonDialog(BuildContext context, WidgetRef ref) {
     final textCtrl = TextEditingController();
-    bool clearUnused = true;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          backgroundColor: AppColors.card,
-          title: const Row(
-            children: [
-              Icon(Icons.code_rounded, color: AppColors.primary),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Importar Treino (JSON)',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Escolha uma das opções para formatar seu treino:',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '💡 Opção 1 (Recomendada): Clique em "Formatar com IA", cole seu treino em texto livre (ex: do WhatsApp) e ela vai organizá-lo para você.\n\n'
-                  '📋 Opção 2 (Manual): Clique em "Copiar Instruções" para copiar o prompt modelo. Cole-o no ChatGPT/Claude, adicione seu treino no final e depois copie o resultado gerado de volta no campo abaixo.',
-                  style: TextStyle(fontSize: 12, color: AppColors.onSurface, height: 1.3),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (groqBeta) ...[
-                      Expanded(
-                        child: TextButton.icon(
-                          onPressed: () => _showAiImportDialog(context, textCtrl),
-                          icon: const Icon(Icons.psychology_rounded, color: AppColors.primaryLight),
-                          label: const Text(
-                            'Formatar com IA',
-                            style: TextStyle(color: AppColors.primaryLight),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          const promptTemplate = 'Olá! Quero que formate o meu treino para que eu possa importá-lo em um aplicativo.\n'
-                              'Por favor, analise a lista de exercícios a seguir e converta-a estritamente no formato estruturado (JSON) abaixo. Não escreva nenhuma conversa ou explicação na resposta, apenas o bloco de texto estruturado final.\n\n'
-                              'Estrutura esperada:\n'
-                              '{\n'
-                              '  "nome": "Nome do Treino (ex: Hipertrofia)",\n'
-                              '  "tipo": "ABC", // ABC, ABCD, ABCDE ou CUSTOM\n'
-                              '  "dias": [\n'
-                              '    {\n'
-                              '      "letra": "A",\n'
-                              '      "nome": "Nome do Dia (ex: Peito e Tríceps)",\n'
-                              '      "exercicios": [\n'
-                              '        {\n'
-                              '          "nome": "Nome do Exercício (ex: Supino Reto)",\n'
-                              '          "grupoMuscular": "Peito", // Peito, Costas, Ombro, Tríceps, Bíceps, Perna, Core ou Glúteo\n'
-                              '          "equipamento": "Barra", // Livre, Barra, Haltere, Cabo, Máquina, Peso Corporal ou Smith\n'
-                              '          "isUnilateral": false,\n'
-                              '          "tempoDescansoSegundos": 90,\n'
-                              '          "volume": "4x10",\n'
-                              '          "observacoes": "Dicas de biomecânica ou detalhes adicionais da execução do exercício (ex: Pegada pronada...)" // Pode ser nulo se não houver observações\n'
-                              '        }\n'
-                              '      ]\n'
-                              '    }\n'
-                              '  ]\n'
-                              '}\n\n'
-                              'Aqui está a lista do meu treino para você formatar:\n'
-                              '[SUBSTITUA ESTE TEXTO PELO SEU TREINO DO WHATSAPP OU ANOTAÇÕES]';
-
-                          await Clipboard.setData(const ClipboardData(text: promptTemplate));
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Instruções para a IA copiadas! Cole no ChatGPT/Claude. ✓'),
-                                duration: Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.copy_all_rounded, size: 16),
-                        label: const Text(
-                          'Copiar Instruções',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: textCtrl,
-                  maxLines: 10,
-                  style: const TextStyle(
-                      fontFamily: 'monospace', fontSize: 12),
-                  decoration: const InputDecoration(
-                    hintText: 'Cole o código JSON aqui...',
-                    alignLabelWithHint: true,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: Checkbox(
-                        value: clearUnused,
-                        activeColor: AppColors.primary,
-                        onChanged: (val) {
-                          setState(() {
-                            clearUnused = val ?? false;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Limpar biblioteca (remove exercícios padrão não utilizados)',
-                        style: TextStyle(fontSize: 13, color: AppColors.onBackground),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final input = textCtrl.text.trim();
-                if (input.isEmpty) return;
-
-                try {
-                  final data = jsonDecode(input);
-                  if (data is! Map<String, dynamic>) {
-                    throw const FormatException('O JSON deve ser um objeto.');
-                  }
-                  if (!data.containsKey('nome') || !data.containsKey('dias')) {
-                    throw const FormatException(
-                        'Campos obrigatórios ausentes ("nome" ou "dias").');
-                  }
-
-                  final dias = data['dias'];
-                  if (dias is! List) {
-                    throw const FormatException(
-                        'O campo "dias" deve ser uma lista.');
-                  }
-
-                  Navigator.pop(ctx);
-
-                  final db = ref.read(databaseProvider);
-                  await db.transaction(() async {
-                    if (clearUnused) {
-                      await ref.read(exerciseDaoProvider).deleteUnusedExercises();
-                    }
-
-                    final splitId = await ref.read(workoutDaoProvider).insertSplit(
-                          WorkoutSplitsCompanion.insert(
-                            tipo: data['tipo'] ?? 'CUSTOM',
-                            nome: data['nome'],
-                            ativo: const Value(false),
-                          ),
-                        );
-
-                    final allExercises =
-                        await ref.read(exerciseDaoProvider).getAll();
-
-                    for (final dayObj in dias) {
-                      if (dayObj is! Map<String, dynamic>) continue;
-                      
-                      final letra = dayObj['letra'] ?? 'A';
-                      final nomeDia = dayObj['nome'] ?? 'Treino';
-                      final dayId = await ref.read(workoutDaoProvider).insertDay(
-                            WorkoutDaysCompanion.insert(
-                              splitId: splitId,
-                              letra: letra,
-                              nome: nomeDia,
-                            ),
-                          );
-
-                      final exercisesList = dayObj['exercicios'];
-                      if (exercisesList is! List) continue;
-
-                      for (int i = 0; i < exercisesList.length; i++) {
-                        final exObj = exercisesList[i];
-                        if (exObj is! Map<String, dynamic>) continue;
-
-                        final exName = exObj['nome']?.toString().trim() ?? '';
-                        if (exName.isEmpty) continue;
-
-                        final normalizedSearchName = exName.toLowerCase();
-                        Exercise? foundEx;
-                        for (final e in allExercises) {
-                          if (e.nome.trim().toLowerCase() ==
-                              normalizedSearchName) {
-                            foundEx = e;
-                            break;
-                          }
-                        }
-
-                        int exId;
-                        if (foundEx != null) {
-                          exId = foundEx.id;
-                          final jsonObs = exObj['observacoes']?.toString().trim();
-                          if (jsonObs != null && jsonObs.isNotEmpty && (foundEx.observacoes == null || foundEx.observacoes!.isEmpty)) {
-                            await ref.read(exerciseDaoProvider).updateExercise(
-                                  foundEx.copyWith(
-                                    observacoes: Value(jsonObs),
-                                  ),
-                                );
-                          }
-                        } else {
-                          exId = await ref.read(exerciseDaoProvider).insertExercise(
-                                ExercisesCompanion.insert(
-                                  nome: exName,
-                                  grupoMuscular:
-                                      exObj['grupoMuscular']?.toString() ??
-                                          'Peito',
-                                  equipamento: Value(
-                                      exObj['equipamento']?.toString() ??
-                                          'Livre'),
-                                  isUnilateral: Value(
-                                      exObj['isUnilateral'] as bool? ?? false),
-                                  tempoDescansoSegundos: Value(
-                                      exObj['tempoDescansoSegundos'] as int? ??
-                                          90),
-                                  volume: Value(exObj['volume']?.toString()),
-                                  link: Value(exObj['link']?.toString()),
-                                  observacoes: Value(exObj['observacoes']?.toString()),
-                                  vezesFeito: const Value(0),
-                                ),
-                              );
-                        }
-
-                        await ref.read(exerciseDaoProvider).linkExerciseToDay(
-                              WorkoutDayExercisesCompanion.insert(
-                                dayId: dayId,
-                                exerciseId: exId,
-                                ordem: i,
-                              ),
-                            );
-                      }
-                    }
-
-                    await ref.read(workoutDaoProvider).setActiveSplit(splitId);
-                  });
-
-                  ref.invalidate(splitsProvider);
-                  ref.invalidate(activeSplitProvider);
-                  ref.invalidate(activeSplitDaysProvider);
-
-                  final nav = navigatorKey.currentState;
-                  final rootContext = navigatorKey.currentContext;
-
-                  if (rootContext != null && rootContext.mounted) {
-                    ScaffoldMessenger.of(rootContext).showSnackBar(
-                      const SnackBar(
-                        content: Text('Treino importado e ativado com sucesso! ✓'),
-                      ),
-                    );
-                  }
-
-                  if (!isOnboarding && context.mounted) {
-                    Navigator.pop(context);
-                  }
-
-                  nav?.push(
-                    MaterialPageRoute(builder: (_) => const SetupPage(initialTab: 2)),
-                  );
-                } catch (e) {
-                  if (context.mounted) {
-                    showDialog(
-                      context: context,
-                      builder: (errCtx) => AlertDialog(
-                        backgroundColor: AppColors.card,
-                        title: const Text('Erro na Importação'),
-                        content: Text(
-                            'Não foi possível importar o treino. Detalhes:\n$e'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(errCtx),
-                            child: const Text('OK'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Importar'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAiImportDialog(BuildContext context, TextEditingController mainJsonCtrl) {
     final rawTextCtrl = TextEditingController();
+    bool clearUnused = true;
+    bool isAiView = false;
     bool isLoading = false;
     String errorMessage = '';
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: !isLoading,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            backgroundColor: AppColors.card,
-            title: const Row(
+            backgroundColor: AppColors.background,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
               children: [
-                Icon(Icons.psychology_rounded, color: AppColors.primaryLight),
-                SizedBox(width: 8),
+                Icon(
+                  isAiView ? Icons.psychology_rounded : Icons.code_rounded,
+                  color: isAiView ? AppColors.primaryLight : AppColors.primary,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Formatar Treino com IA',
+                    isAiView ? 'Formatar Treino com IA' : 'Importar Treino (JSON)',
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Cole o texto bruto do seu treino (ex: copiado do WhatsApp ou Notas). A IA vai organizá-lo e formatá-lo para o aplicativo automaticamente.',
-                    style: TextStyle(fontSize: 13, color: AppColors.onSurface),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: SingleChildScrollView(
+                child: AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 250),
+                  crossFadeState: isAiView ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                  firstChild: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.card,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.divider),
+                        ),
+                        child: const Text(
+                          'Cole o código JSON do seu treino abaixo. Se tiver apenas o texto simples (ex: do WhatsApp), clique em "Formatar com IA" no botão abaixo para organizá-lo automaticamente.',
+                          style: TextStyle(fontSize: 12, color: AppColors.onSurface, height: 1.4),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          if (groqBeta) ...[
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    isAiView = true;
+                                    errorMessage = '';
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                                  foregroundColor: AppColors.primaryLight,
+                                  elevation: 0,
+                                  side: const BorderSide(color: AppColors.primary, width: 1),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                icon: const Icon(Icons.psychology_rounded, size: 18),
+                                label: const Text(
+                                  'Formatar com IA',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                const promptTemplate = 'Olá! Quero que formate o meu treino para que eu possa importá-lo em um aplicativo.\n'
+                                    'Por favor, analise a lista de exercícios a seguir e converta-a estritamente no formato estruturado (JSON) abaixo. Não escreva nenhuma conversa ou explicação na resposta, apenas o bloco de texto estruturado final.\n\n'
+                                    'Estrutura esperada:\n'
+                                    '{\n'
+                                    '  "nome": "Nome do Treino (ex: Hipertrofia)",\n'
+                                    '  "tipo": "ABC", // ABC, ABCD, ABCDE ou CUSTOM\n'
+                                    '  "dias": [\n'
+                                    '    {\n'
+                                    '      "letra": "A",\n'
+                                    '      "nome": "Nome do Dia (ex: Peito e Tríceps)",\n'
+                                    '      "exercicios": [\n'
+                                    '        {\n'
+                                    '          "nome": "Nome do Exercício (ex: Supino Reto)",\n'
+                                    '          "grupoMuscular": "Peito", // Peito, Costas, Ombro, Tríceps, Bíceps, Perna, Core ou Glúteo\n'
+                                    '          "equipamento": "Barra", // Livre, Barra, Haltere, Cabo, Máquina, Peso Corporal ou Smith\n'
+                                    '          "isUnilateral": false,\n'
+                                    '          "tempoDescansoSegundos": 90,\n'
+                                    '          "volume": "4x10",\n'
+                                    '          "observacoes": "Dicas de biomecânica ou detalhes adicionais da execução do exercício (ex: Pegada pronada...)" // Pode ser nulo se não houver observações\n'
+                                    '        }\n'
+                                    '      ]\n'
+                                    '    }\n'
+                                    '  ]\n'
+                                    '}\n\n'
+                                    'Aqui está a lista do meu treino para você formatar:\n'
+                                    '[SUBSTITUA ESTE TEXTO PELO SEU TREINO DO WHATSAPP OU ANOTAÇÕES]';
+
+                                await Clipboard.setData(const ClipboardData(text: promptTemplate));
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Instruções para a IA copiadas! Cole no ChatGPT/Claude. ✓'),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                side: const BorderSide(color: AppColors.divider),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              icon: const Icon(Icons.copy_all_rounded, size: 16, color: AppColors.onSurface),
+                              label: const Text(
+                                'Copiar Prompt',
+                                style: TextStyle(fontSize: 12, color: AppColors.onSurface),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: textCtrl,
+                        maxLines: 8,
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: AppColors.onBackground),
+                        decoration: InputDecoration(
+                          hintText: 'Cole o código JSON aqui...',
+                          alignLabelWithHint: true,
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.divider),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.card,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            clearUnused = !clearUnused;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: Checkbox(
+                                  value: clearUnused,
+                                  activeColor: AppColors.primary,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      clearUnused = val ?? false;
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'Limpar biblioteca (remove exercícios padrão não utilizados)',
+                                  style: TextStyle(fontSize: 11, color: AppColors.onSurface),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: rawTextCtrl,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      hintText: 'Ex:\nSegunda: Peito e Tríceps\n- Supino Reto 4x10\n- Tríceps Testa 3x12...',
-                      alignLabelWithHint: true,
-                    ),
+                  secondChild: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Cole o texto bruto do treino (WhatsApp, Notas, etc.). A IA estruturará tudo no formato correto para o aplicativo de forma automática.',
+                        style: TextStyle(fontSize: 12, color: AppColors.onSurface, height: 1.4),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: rawTextCtrl,
+                        maxLines: 6,
+                        enabled: !isLoading,
+                        decoration: InputDecoration(
+                          hintText: 'Ex:\nTreino A - Peito e Tríceps\n- Supino reto com halteres 4 séries de 10 reps\n- Tríceps corda 3x12 descansa 1 min...',
+                          alignLabelWithHint: true,
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.divider),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.card,
+                        ),
+                      ),
+                      if (errorMessage.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  errorMessage,
+                                  style: const TextStyle(color: Colors.redAccent, fontSize: 11, height: 1.3),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: isLoading
+                                ? null
+                                : () {
+                                    setState(() {
+                                      isAiView = false;
+                                      errorMessage = '';
+                                    });
+                                  },
+                            child: const Text('Voltar'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: isLoading
+                                ? null
+                                : () async {
+                                    final rawText = rawTextCtrl.text.trim();
+                                    if (rawText.isEmpty) {
+                                      setState(() {
+                                        errorMessage = 'Insira o texto do treino.';
+                                      });
+                                      return;
+                                    }
+
+                                    setState(() {
+                                      isLoading = true;
+                                      errorMessage = '';
+                                    });
+
+                                    try {
+                                      final prefs = await SharedPreferences.getInstance();
+                                      final apiKey = prefs.getString('groq_api_key') ??
+                                          ('gsk_0U02Xmja'
+                                              '1UEmgIbrgdUkWGdyb3FYQUYZfpEQGVx0CSYa9Hz0RHIS');
+
+                                      final jsonResult = await _processWorkoutWithGroq(rawText, apiKey);
+
+                                      textCtrl.text = jsonResult;
+
+                                      setState(() {
+                                        isLoading = false;
+                                        isAiView = false;
+                                        errorMessage = '';
+                                      });
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Treino formatado com sucesso! ✓'),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      String errorMsg =
+                                          'Ocorreu um erro ao formatar com IA. Verifique o texto e tente novamente.';
+                                      final errStr = e.toString();
+                                      if (errStr.contains('SocketException') ||
+                                          errStr.contains('Failed host lookup') ||
+                                          errStr.contains('Network') ||
+                                          errStr.contains('errno = 7')) {
+                                        errorMsg = 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
+                                      } else if (errStr.contains('rate_limit') ||
+                                          errStr.contains('rate limit') ||
+                                          errStr.contains('Rate limit') ||
+                                          errStr.contains('429') ||
+                                          errStr.contains('413') ||
+                                          errStr.contains('Limit 6000') ||
+                                          errStr.contains('limit_exceeded')) {
+                                        errorMsg =
+                                            'O limite temporário de requisições da IA foi atingido. Por favor, aguarde 1 minuto e tente novamente.';
+                                      } else if (errStr.contains('invalid_api_key') ||
+                                          errStr.contains('401') ||
+                                          errStr.contains('Unauthorized')) {
+                                        errorMsg =
+                                            'A chave de API da IA está inválida ou expirada. Verifique as configurações.';
+                                      }
+                                      setState(() {
+                                        isLoading = false;
+                                        errorMessage = errorMsg;
+                                      });
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: isLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.auto_awesome_rounded, size: 14),
+                                      SizedBox(width: 6),
+                                      Text('Formatar Treino'),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  if (errorMessage.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      errorMessage,
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: isLoading ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        final rawText = rawTextCtrl.text.trim();
-                        
-                        if (rawText.isEmpty) {
-                          setState(() {
-                            errorMessage = 'Insira o texto do treino.';
-                          });
-                          return;
-                        }
-                        
-                        setState(() {
-                          isLoading = true;
-                          errorMessage = '';
-                        });
-                        
+            actions: isAiView
+                ? []
+                : [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final input = textCtrl.text.trim();
+                        if (input.isEmpty) return;
+
                         try {
-                          // Obtém a API Key mockada ou a configurada anteriormente
-                          final prefs = await SharedPreferences.getInstance();
-                          final apiKey = prefs.getString('groq_api_key') ?? ('gsk_0U02Xmja' '1UEmgIbrgdUkWGdyb3FYQUYZfpEQGVx0CSYa9Hz0RHIS');
-                          
-                          final jsonResult = await _processWorkoutWithGroq(rawText, apiKey);
-                          
-                          mainJsonCtrl.text = jsonResult;
-                          
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
+                          final data = jsonDecode(input);
+                          if (data is! Map<String, dynamic>) {
+                            throw const FormatException('O JSON deve ser um objeto.');
+                          }
+                          if (!data.containsKey('nome') || !data.containsKey('dias')) {
+                            throw const FormatException(
+                                'Campos obrigatórios ausentes ("nome" ou "dias").');
+                          }
+
+                          final dias = data['dias'];
+                          if (dias is! List) {
+                            throw const FormatException('O campo "dias" deve ser uma lista.');
+                          }
+
+                          Navigator.pop(ctx);
+
+                          final db = ref.read(databaseProvider);
+                          await db.transaction(() async {
+                            if (clearUnused) {
+                              await ref.read(exerciseDaoProvider).deleteUnusedExercises();
+                            }
+
+                            final splitId = await ref.read(workoutDaoProvider).insertSplit(
+                                  WorkoutSplitsCompanion.insert(
+                                    tipo: data['tipo'] ?? 'CUSTOM',
+                                    nome: data['nome'],
+                                    ativo: const Value(false),
+                                  ),
+                                );
+
+                            final allExercises = await ref.read(exerciseDaoProvider).getAll();
+
+                            for (final dayObj in dias) {
+                              if (dayObj is! Map<String, dynamic>) continue;
+
+                              final letra = dayObj['letra'] ?? 'A';
+                              final nomeDia = dayObj['nome'] ?? 'Treino';
+                              final dayId = await ref.read(workoutDaoProvider).insertDay(
+                                    WorkoutDaysCompanion.insert(
+                                      splitId: splitId,
+                                      letra: letra,
+                                      nome: nomeDia,
+                                    ),
+                                  );
+
+                              final exercisesList = dayObj['exercicios'];
+                              if (exercisesList is! List) continue;
+
+                              for (int i = 0; i < exercisesList.length; i++) {
+                                final exObj = exercisesList[i];
+                                if (exObj is! Map<String, dynamic>) continue;
+
+                                final exName = exObj['nome']?.toString().trim() ?? '';
+                                if (exName.isEmpty) continue;
+
+                                final normalizedSearchName = exName.toLowerCase();
+                                Exercise? foundEx;
+                                for (final e in allExercises) {
+                                  if (e.nome.trim().toLowerCase() == normalizedSearchName) {
+                                    foundEx = e;
+                                    break;
+                                  }
+                                }
+
+                                int exId;
+                                if (foundEx != null) {
+                                  exId = foundEx.id;
+                                  final jsonObs = exObj['observacoes']?.toString().trim();
+                                  if (jsonObs != null &&
+                                      jsonObs.isNotEmpty &&
+                                      (foundEx.observacoes == null ||
+                                          foundEx.observacoes!.isEmpty)) {
+                                    await ref.read(exerciseDaoProvider).updateExercise(
+                                          foundEx.copyWith(
+                                            observacoes: Value(jsonObs),
+                                          ),
+                                        );
+                                  }
+                                } else {
+                                  exId = await ref.read(exerciseDaoProvider).insertExercise(
+                                        ExercisesCompanion.insert(
+                                          nome: exName,
+                                          grupoMuscular:
+                                              exObj['grupoMuscular']?.toString() ?? 'Peito',
+                                          equipamento: Value(
+                                              exObj['equipamento']?.toString() ?? 'Livre'),
+                                          isUnilateral: Value(
+                                              exObj['isUnilateral'] as bool? ?? false),
+                                          tempoDescansoSegundos: Value(
+                                              exObj['tempoDescansoSegundos'] as int? ?? 90),
+                                          volume: Value(exObj['volume']?.toString()),
+                                          link: Value(exObj['link']?.toString()),
+                                          observacoes: Value(exObj['observacoes']?.toString()),
+                                          vezesFeito: const Value(0),
+                                        ),
+                                      );
+                                }
+
+                                await ref.read(exerciseDaoProvider).linkExerciseToDay(
+                                      WorkoutDayExercisesCompanion.insert(
+                                        dayId: dayId,
+                                        exerciseId: exId,
+                                        ordem: i,
+                                      ),
+                                    );
+                              }
+                            }
+
+                            await ref.read(workoutDaoProvider).setActiveSplit(splitId);
+                          });
+
+                          ref.invalidate(splitsProvider);
+                          ref.invalidate(activeSplitProvider);
+                          ref.invalidate(activeSplitDaysProvider);
+
+                          final nav = navigatorKey.currentState;
+                          final rootContext = navigatorKey.currentContext;
+
+                          if (rootContext != null && rootContext.mounted) {
+                            ScaffoldMessenger.of(rootContext).showSnackBar(
                               const SnackBar(
-                                content: Text('Treino formatado com sucesso! ✓'),
+                                content: Text('Treino importado e ativado com sucesso! ✓'),
                               ),
                             );
                           }
-                        } catch (e) {
-                          String errorMsg = 'Ocorreu um erro ao formatar com IA. Verifique o texto e tente novamente.';
-                          final errStr = e.toString();
-                          if (errStr.contains('SocketException') || 
-                              errStr.contains('Failed host lookup') || 
-                              errStr.contains('Network') ||
-                              errStr.contains('errno = 7')) {
-                            errorMsg = 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
-                          } else if (errStr.contains('rate_limit') || 
-                                     errStr.contains('rate limit') || 
-                                     errStr.contains('Rate limit') ||
-                                     errStr.contains('429') || 
-                                     errStr.contains('413') ||
-                                     errStr.contains('Limit 6000') ||
-                                     errStr.contains('limit_exceeded')) {
-                            errorMsg = 'O limite temporário de requisições da IA foi atingido. Por favor, aguarde 1 minuto e tente novamente.';
-                          } else if (errStr.contains('invalid_api_key') || 
-                                     errStr.contains('401') ||
-                                     errStr.contains('Unauthorized')) {
-                            errorMsg = 'A chave de API da IA está inválida ou expirada. Verifique as configurações.';
+
+                          if (!isOnboarding && context.mounted) {
+                            Navigator.pop(context);
                           }
-                          setState(() {
-                            isLoading = false;
-                            errorMessage = errorMsg;
-                          });
+
+                          nav?.push(
+                            MaterialPageRoute(builder: (_) => const SetupPage(initialTab: 2)),
+                          );
+                        } catch (e) {
+                          if (context.mounted) {
+                            showDialog(
+                              context: context,
+                              builder: (errCtx) => AlertDialog(
+                                backgroundColor: AppColors.card,
+                                title: const Text('Erro na Importação'),
+                                content:
+                                    Text('Não foi possível importar o treino. Detalhes:\n$e'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(errCtx),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
                         }
                       },
-                child: isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Formatar'),
-              ),
-            ],
+                      child: const Text('Importar'),
+                    ),
+                  ],
           );
         },
       ),

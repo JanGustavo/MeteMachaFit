@@ -8,6 +8,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/providers.dart';
 import '../../core/providers/progress_extended_provider.dart';
 import '../../core/theme/app_theme.dart';
+import 'workout_session_detail_page.dart';
 
 class ProgressPage extends ConsumerStatefulWidget {
   const ProgressPage({super.key});
@@ -1124,6 +1125,19 @@ class _MonthCalendarGrid extends StatelessWidget {
                         ),
                         title: Text(name),
                         subtitle: Text(duration),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: AppColors.onSurface,
+                        ),
+                        onTap: () {
+                          Navigator.pop(ctx); // Fecha o bottom sheet
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => WorkoutSessionDetailPage(session: s),
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
@@ -1166,53 +1180,69 @@ class _MonthSessionsList extends StatelessWidget {
             ? '${s.duracaoSegundos! ~/ 60} min'
             : '0 min';
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 65,
-                child: Text(
-                  '$dateStr ($weekdayStr)',
+        return InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => WorkoutSessionDetailPage(session: s),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 65,
+                  child: Text(
+                    '$dateStr ($weekdayStr)',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                CircleAvatar(
+                  radius: 10,
+                  backgroundColor: color,
+                  child: Text(
+                    wDay?.letra ?? 'T',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  durationStr,
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.onSurface,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-              CircleAvatar(
-                radius: 10,
-                backgroundColor: color,
-                child: Text(
-                  wDay?.letra ?? 'T',
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                durationStr,
-                style: const TextStyle(
-                  fontSize: 12,
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 10,
                   color: AppColors.onSurface,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

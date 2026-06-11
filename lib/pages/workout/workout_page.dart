@@ -207,7 +207,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
       } else if (prev.isNotEmpty) {
         final totalPeso = prev.map((l) => l.peso).fold<double>(0.0, (a, b) => a + b);
         final totalReps = prev.map((l) => l.repeticoes).fold<int>(0, (a, b) => a + b);
-        double avgPeso = totalPeso / prev.length;
+        double avgPeso = ((totalPeso / prev.length) / 2).round() * 2.0;
         final avgReps = (totalReps / prev.length).round();
 
         if (isBodyWeight && avgPeso <= 0.0) {
@@ -454,15 +454,46 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Você completou as $expectedSets séries recomendadas!'),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'IR PARA O PRÓXIMO',
-              textColor: AppColors.primaryLight,
-              onPressed: () {
-                _proximoExercicio();
-              },
+            content: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Você completou as $expectedSets séries recomendadas!',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    _proximoExercicio();
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: AppColors.primaryLight,
+                  ),
+                  child: const Text(
+                    'IR PARA O PRÓXIMO',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  color: AppColors.onSurface,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  },
+                ),
+              ],
             ),
+            duration: const Duration(seconds: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         );
       }
@@ -570,15 +601,18 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancelar'),
             ),
-            TextButton(
+            OutlinedButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 _finalizarTreino();
               },
-              child: const Text(
-                'Finalizar mesmo assim',
-                style: TextStyle(color: AppColors.primaryLight),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryLight,
+                side: const BorderSide(color: AppColors.primaryLight),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
+              child: const Text('Finalizar mesmo assim'),
             ),
             ElevatedButton(
               onPressed: () async {
