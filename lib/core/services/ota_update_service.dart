@@ -67,13 +67,38 @@ class OtaUpdateService {
             );
           }
         }
+      } else {
+        // Tratar erros HTTP de forma amigável (como 403 Rate Limit do GitHub)
+        debugPrint('Erro na verificação de atualização: Status ${response.statusCode} - ${response.body}');
+        if (forceShowNoUpdate && context.mounted) {
+          String friendlyMsg = 'Não foi possível buscar atualizações. Tente novamente mais tarde.';
+          if (response.statusCode == 403) {
+            friendlyMsg = 'Muitas requisições ao GitHub. Aguarde alguns minutos antes de tentar novamente ou verifique a internet.';
+          } else if (response.statusCode == 404) {
+            friendlyMsg = 'Repositório ou atualizações não encontradas.';
+          } else if (response.statusCode >= 500) {
+            friendlyMsg = 'O servidor do GitHub está instável. Tente mais tarde.';
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(friendlyMsg),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Erro ao verificar atualizações: $e');
       if (forceShowNoUpdate && context.mounted) {
+        String friendlyMsg = 'Falha ao verificar atualizações.';
+        if (e is SocketException) {
+          friendlyMsg = 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
+        } else {
+          friendlyMsg = 'Erro ao verificar atualizações: ${e.toString().split('\n').first}';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Falha ao verificar atualizações: $e'),
+            content: Text(friendlyMsg),
             backgroundColor: AppColors.primary,
           ),
         );
@@ -196,9 +221,28 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               case OtaStatus.CANCELED:
                 _statusMessage = 'Download cancelado.';
                 break;
+              case OtaStatus.PERMISSION_NOT_GRANTED_ERROR:
+                _isError = true;
+                _statusMessage = 'Permissão negada. Conceda permissão para instalar fontes desconhecidas.';
+                break;
+              case OtaStatus.DOWNLOAD_ERROR:
+                _isError = true;
+                _statusMessage = 'Erro ao baixar o arquivo. Verifique sua conexão de internet.';
+                break;
+              case OtaStatus.CHECKSUM_ERROR:
+                _isError = true;
+                _statusMessage = 'Erro na integridade do arquivo baixado (checksum inválido).';
+                break;
+              case OtaStatus.INSTALLATION_ERROR:
+                _isError = true;
+                _statusMessage = 'Erro na instalação. Tente instalar o arquivo baixado manualmente.';
+                break;
+              case OtaStatus.ALREADY_RUNNING_ERROR:
+                _statusMessage = 'Uma atualização já está em andamento.';
+                break;
               default:
                 _isError = true;
-                _statusMessage = 'Erro no download. Verifique sua conexão.';
+                _statusMessage = 'Erro ao processar a atualização. Tente reiniciar o app.';
                 break;
             }
           });
@@ -212,14 +256,14 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
         onError: (err) {
           setState(() {
             _isError = true;
-            _statusMessage = 'Erro: $err';
+            _statusMessage = 'Erro: $err. Certifique-se de autorizar a instalação de apps desconhecidos nas configurações.';
           });
         },
       );
     } catch (e) {
       setState(() {
         _isError = true;
-        _statusMessage = 'Exceção: $e';
+        _statusMessage = 'Não foi possível concluir a atualização: $e';
       });
     }
   }
