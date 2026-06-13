@@ -62,7 +62,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
     final allCompletedLogsAsync = ref.watch(allCompletedLogsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: daysMapAsync.when(
           data: (daysMap) {
@@ -84,10 +84,10 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
         data: (exercises) => currentLogsAsync.when(
           data: (logs) {
             if (logs.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
                   'Nenhuma série registrada nesta sessão.',
-                  style: TextStyle(color: AppColors.onSurface),
+                  style: TextStyle(color: context.onSurface),
                 ),
               );
             }
@@ -231,9 +231,9 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.divider),
+              border: Border.all(color: context.divider),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.3),
@@ -254,10 +254,10 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                         const SizedBox(width: 8),
                         Text(
                           '$formattedDate às $formattedTime',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.onBackground,
+                            color: context.onBackground,
                           ),
                         ),
                       ],
@@ -288,7 +288,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Divider(color: AppColors.divider, height: 1),
+                Divider(color: context.divider, height: 1),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -333,7 +333,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
 
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: AppColors.card,
+                  color: context.cardColor,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -349,10 +349,10 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                                 children: [
                                   Text(
                                     exercise.nome,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.onBackground,
+                                      color: context.onBackground,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -376,7 +376,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                             IconButton(
                               icon: Icon(
                                 isExpanded ? Icons.show_chart_rounded : Icons.insert_chart_outlined_rounded,
-                                color: isExpanded ? AppColors.success : AppColors.onSurface,
+                                color: isExpanded ? AppColors.success : context.onSurface,
                               ),
                               tooltip: 'Ver histórico de cargas',
                               onPressed: () {
@@ -395,7 +395,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                         // Gráfico de evolução se estiver expandido
                         if (isExpanded) ...[
                           const SizedBox(height: 16),
-                          const Divider(color: AppColors.divider, height: 1),
+                          Divider(color: context.divider, height: 1),
                           const SizedBox(height: 16),
                           const Text(
                             'EVOLUÇÃO DE CARGA MÁXIMA',
@@ -414,7 +414,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                         ],
 
                         const SizedBox(height: 16),
-                        const Divider(color: AppColors.divider, height: 1),
+                        Divider(color: context.divider, height: 1),
                         const SizedBox(height: 12),
 
                         // Tabela de séries
@@ -427,7 +427,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                           children: [
                             // Header da tabela
-                            const TableRow(
+                            TableRow(
                               children: [
                                 Padding(
                                   padding: EdgeInsets.symmetric(vertical: 4),
@@ -436,7 +436,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
+                                      color: context.onSurface,
                                     ),
                                   ),
                                 ),
@@ -447,7 +447,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
+                                      color: context.onSurface,
                                     ),
                                   ),
                                 ),
@@ -458,7 +458,7 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
+                                      color: context.onSurface,
                                     ),
                                   ),
                                 ),
@@ -472,10 +472,10 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                                     padding: const EdgeInsets.symmetric(vertical: 8),
                                     child: Text(
                                       'S${log.serie}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.onBackground,
+                                        color: context.onBackground,
                                       ),
                                     ),
                                   ),
@@ -485,13 +485,13 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
                                       children: [
                                         Text(
                                           '${log.peso.toStringAsFixed(1).replaceAll('.0', '')} kg',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.onBackground,
+                                            color: context.onBackground,
                                           ),
                                         ),
-                                        const Text(' × ', style: TextStyle(color: AppColors.onSurface)),
+                                        Text(' × ', style: TextStyle(color: context.onSurface)),
                                         Text(
                                           '${log.repeticoes}',
                                           style: const TextStyle(
@@ -528,22 +528,22 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.onSurface, size: 22),
+        Icon(icon, color: context.onSurface, size: 22),
         const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppColors.onBackground,
+            color: context.onBackground,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: AppColors.onSurface,
+            color: context.onSurface,
           ),
         ),
       ],
@@ -564,17 +564,17 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
             });
           }
         },
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.surfaceColor,
         selectedColor: AppColors.primary,
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : AppColors.onSurface,
+          color: isSelected ? Colors.white : context.onSurface,
           fontSize: 12,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(
-            color: isSelected ? Colors.transparent : AppColors.divider,
+            color: isSelected ? Colors.transparent : context.divider,
           ),
         ),
       ),
@@ -610,9 +610,9 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
 
   Widget _buildComparisonCell(ExerciseLog current, ExerciseLog? previous) {
     if (previous == null) {
-      return const Text(
+      return Text(
         'Primeiro registro',
-        style: TextStyle(fontSize: 12, color: AppColors.onSurface, fontStyle: FontStyle.italic),
+        style: TextStyle(fontSize: 12, color: context.onSurface, fontStyle: FontStyle.italic),
       );
     }
 
@@ -682,14 +682,14 @@ class _WorkoutSessionDetailPageState extends ConsumerState<WorkoutSessionDetailP
     }
 
     if (items.isEmpty) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_rounded, color: AppColors.onSurface, size: 12),
+          Icon(Icons.check_rounded, color: context.onSurface, size: 12),
           SizedBox(width: 4),
           Text(
             'Igual',
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ],
       );
@@ -714,12 +714,12 @@ class _LoadEvolutionChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final exLogs = logs.where((l) => l.exerciseId == exerciseId).toList();
     if (exLogs.length < 2) {
-      return const SizedBox(
+      return SizedBox(
         height: 120,
         child: Center(
           child: Text(
             'Histórico insuficiente para este exercício.',
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ),
       );
@@ -745,12 +745,12 @@ class _LoadEvolutionChart extends StatelessWidget {
     }).toList();
 
     if (spots.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 120,
         child: Center(
           child: Text(
             'Histórico insuficiente para este exercício.',
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ),
       );
@@ -769,7 +769,7 @@ class _LoadEvolutionChart extends StatelessWidget {
           maxY: maxY,
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (touchedSpot) => AppColors.surface,
+              getTooltipColor: (touchedSpot) => context.surfaceColor,
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((spot) {
                   final idx = spot.x.toInt();
@@ -780,7 +780,7 @@ class _LoadEvolutionChart extends StatelessWidget {
                   final dateStr = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
                   return LineTooltipItem(
                     '$weight kg\n$dateStr',
-                    const TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold, fontSize: 10),
+                    TextStyle(color: context.onBackground, fontWeight: FontWeight.bold, fontSize: 10),
                   );
                 }).toList();
               },
@@ -789,7 +789,7 @@ class _LoadEvolutionChart extends StatelessWidget {
           gridData: FlGridData(
             drawHorizontalLine: true,
             drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => const FlLine(color: AppColors.divider, strokeWidth: 1),
+            getDrawingHorizontalLine: (_) => FlLine(color: context.divider, strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -807,7 +807,7 @@ class _LoadEvolutionChart extends StatelessWidget {
                   final date = sessionDates[sId]!;
                   return Text(
                     '${date.day}/${date.month}',
-                    style: const TextStyle(color: AppColors.onSurface, fontSize: 8),
+                    style: TextStyle(color: context.onSurface, fontSize: 8),
                   );
                 },
               ),
@@ -816,7 +816,7 @@ class _LoadEvolutionChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 32,
-                getTitlesWidget: (v, _) => Text(v.toStringAsFixed(0), style: const TextStyle(color: AppColors.onSurface, fontSize: 9)),
+                getTitlesWidget: (v, _) => Text(v.toStringAsFixed(0), style: TextStyle(color: context.onSurface, fontSize: 9)),
               ),
             ),
           ),

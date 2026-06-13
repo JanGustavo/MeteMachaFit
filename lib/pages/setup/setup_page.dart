@@ -46,7 +46,7 @@ class _SetupPageState extends ConsumerState<SetupPage>
           controller: _tabController,
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primaryLight,
-          unselectedLabelColor: AppColors.onSurface,
+          unselectedLabelColor: context.onSurface,
           tabs: const [
             Tab(text: 'Exercícios', icon: Icon(Icons.fitness_center_rounded)),
             Tab(text: 'Meus Treinos', icon: Icon(Icons.calendar_month_rounded)),
@@ -88,9 +88,9 @@ class _ExercisesSetupTab extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Nenhum exerc\u00edcio cadastrado.',
-                    style: TextStyle(color: AppColors.onSurface),
+                    style: TextStyle(color: context.onSurface),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
@@ -153,8 +153,8 @@ class _ExercisesSetupTab extends ConsumerWidget {
                             children: [
                               Text(
                                 '${ex.equipamento}${ex.volume != null && ex.volume!.isNotEmpty ? ' \u00b7 ${ex.volume}' : ''} \u00b7 ${ex.tempoDescansoSegundos}s descanso${ex.isUnilateral ? ' \u00b7 Unilateral' : ''}',
-                                style: const TextStyle(
-                                    fontSize: 12, color: AppColors.onSurface),
+                                style: TextStyle(
+                                    fontSize: 12, color: context.onSurface),
                               ),
                               if (ex.link != null && ex.link!.isNotEmpty) ...[
                                 const SizedBox(height: 4),
@@ -224,7 +224,7 @@ class _ExercisesSetupTab extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Excluir exerc\u00edcio?'),
         content: Text(
           'Deseja excluir "${ex.nome}"? Se ele estiver associado a algum dia de treino ou log, a opera\u00e7\u00e3o falhar\u00e1.',
@@ -281,7 +281,7 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Editar Dia de Treino'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -349,7 +349,7 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Adicionar Dia de Treino'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -411,7 +411,7 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Excluir Dia de Treino?'),
         content: Text(
           'Deseja excluir permanentemente o "Dia ${day.letra} - ${day.nome}"? '
@@ -460,10 +460,10 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
       body: daysAsync.when(
         data: (days) {
           if (days.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'Nenhum dia de treino cadastrado na divisão ativa.',
-                style: TextStyle(color: AppColors.onSurface),
+                style: TextStyle(color: context.onSurface),
               ),
             );
           }
@@ -485,9 +485,9 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
               Container(
                 padding:
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border(bottom: BorderSide(color: AppColors.divider)),
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
+                  border: Border(bottom: BorderSide(color: context.divider)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,12 +495,12 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Selecionar Dia:',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: AppColors.onBackground,
+                            color: context.onBackground,
                           ),
                         ),
                         Row(
@@ -539,7 +539,7 @@ class _RoutineSetupTabState extends ConsumerState<_RoutineSetupTab> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<WorkoutDay>(
                       value: _selectedDay,
-                      dropdownColor: AppColors.card,
+                      dropdownColor: context.cardColor,
                       isExpanded: true,
                       decoration: const InputDecoration(
                         contentPadding:
@@ -624,19 +624,19 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: _exercises.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 'Nenhum exerc\u00edcio vinculado a este dia.',
-                style: TextStyle(color: AppColors.onSurface),
+                style: TextStyle(color: context.onSurface),
               ),
             )
           : Column(
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Text(
                     'Arraste e solte para reordenar os exerc\u00edcios do treino (toque para editar)',
-                    style: TextStyle(fontSize: 11, color: AppColors.onSurface),
+                    style: TextStyle(fontSize: 11, color: context.onSurface),
                   ),
                 ),
                 Expanded(
@@ -654,8 +654,8 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
                             exercise: ex,
                             onSaved: (_) => _load(),
                           ),
-                          leading: const Icon(Icons.drag_handle_rounded,
-                              color: AppColors.onSurface),
+                          leading: Icon(Icons.drag_handle_rounded,
+                              color: context.onSurface),
                           title: Text(ex.nome,
                               style:
                                   const TextStyle(fontWeight: FontWeight.w600)),
@@ -664,8 +664,8 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
                             children: [
                               Text(
                                 '${ex.grupoMuscular} \u00b7 ${ex.equipamento}${ex.volume != null && ex.volume!.isNotEmpty ? ' \u00b7 ${ex.volume}' : ''} \u00b7 ${ex.tempoDescansoSegundos}s descanso${ex.isUnilateral ? ' \u00b7 Unilateral' : ''}',
-                                style: const TextStyle(
-                                    fontSize: 12, color: AppColors.onSurface),
+                                style: TextStyle(
+                                    fontSize: 12, color: context.onSurface),
                               ),
                               if (ex.link != null && ex.link!.isNotEmpty) ...[
                                 const SizedBox(height: 4),
@@ -795,7 +795,7 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Vincular Exerc\u00edcio'),
         content: SizedBox(
           width: double.maxFinite,
@@ -803,11 +803,11 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (unlinked.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Text(
                     'Todos os exerc\u00edcios cadastrados j\u00e1 fazem parte deste dia de treino.',
-                    style: TextStyle(color: AppColors.onSurface),
+                    style: TextStyle(color: context.onSurface),
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -844,7 +844,7 @@ class _RoutineExercisesListState extends ConsumerState<_RoutineExercisesList> {
                     },
                   ),
                 ),
-              const Divider(color: AppColors.divider),
+              Divider(color: context.divider),
               TextButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
@@ -892,7 +892,7 @@ void _showAddExerciseSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.card,
+    backgroundColor: context.cardColor,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -931,7 +931,7 @@ void _showAddExerciseSheet(
                       value: group,
                       decoration:
                           const InputDecoration(labelText: 'Grupo Muscular'),
-                      dropdownColor: AppColors.card,
+                      dropdownColor: context.cardColor,
                       items: {
                         if (group != null) group!,
                         'Peito',
@@ -955,7 +955,7 @@ void _showAddExerciseSheet(
                       value: equipment,
                       decoration:
                           const InputDecoration(labelText: 'Equipamento'),
-                      dropdownColor: AppColors.card,
+                      dropdownColor: context.cardColor,
                       items: {
                         if (equipment != null) equipment!,
                         ...equipmentOptions,
@@ -1112,7 +1112,7 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
       error: (err, stack) => Center(child: Text('Erro ao carregar: $err')),
       data: (activeSplit) {
         if (activeSplit == null) {
-          return const Center(
+          return Center(
             child: Padding(
               padding: EdgeInsets.all(24.0),
               child: Column(
@@ -1126,13 +1126,13 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.onBackground),
+                        color: context.onBackground),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Ative uma rotina na aba "Minhas Rotinas" para configurar seu planejamento semanal.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.onSurface),
+                    style: TextStyle(color: context.onSurface),
                   ),
                 ],
               ),
@@ -1171,19 +1171,19 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Toque em um treino abaixo para selecioná-lo e depois toque nos dias da semana para vinculá-lo rapidamente, ou use arrastar e soltar.',
                         style:
-                            TextStyle(color: AppColors.onSurface, fontSize: 13),
+                            TextStyle(color: context.onSurface, fontSize: 13),
                       ),
                       const SizedBox(height: 20),
 
                       // ── Draggable & Selectable Workouts Row ──
-                      const Text(
+                      Text(
                         'Treinos Disponíveis',
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onBackground),
+                            color: context.onBackground),
                       ),
                       const SizedBox(height: 10),
                       Wrap(
@@ -1243,10 +1243,10 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                               ),
                               GestureDetector(
                                 onTap: () => setState(() => _selectedWorkoutDayId = null),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.close_rounded,
                                   size: 16,
-                                  color: AppColors.onSurface,
+                                  color: context.onSurface,
                                 ),
                               ),
                             ],
@@ -1256,11 +1256,11 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                       const SizedBox(height: 24),
 
                       // ── Weekly Schedule Grid/List ──
-                      const Text(
+                      Text(
                         'Agenda da Semana',
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onBackground),
+                            color: context.onBackground),
                       ),
                       const SizedBox(height: 12),
                       ListView.builder(
@@ -1319,7 +1319,7 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                                     decoration: BoxDecoration(
                                       color: isHovered
                                           ? AppColors.primary.withOpacity(0.15)
-                                          : AppColors.card,
+                                          : context.cardColor,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: isHovered
@@ -1343,10 +1343,10 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                                             children: [
                                               Text(
                                                 schedule.diaSemana,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
-                                                  color: AppColors.onBackground,
+                                                  color: context.onBackground,
                                                 ),
                                               ),
                                               if (isHovered)
@@ -1606,7 +1606,7 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1620,10 +1620,10 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
               children: [
                 Text(
                   'Parear dia: ${schedule.diaSemana}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onBackground,
+                    color: context.onBackground,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1634,12 +1634,12 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                     backgroundColor: Colors.grey,
                     child: Icon(Icons.nightlight_round, color: Colors.white),
                   ),
-                  title: const Text('Descanso / Folga',
-                      style: TextStyle(color: AppColors.onBackground)),
-                  subtitle: const Text(
+                  title: Text('Descanso / Folga',
+                      style: TextStyle(color: context.onBackground)),
+                  subtitle: Text(
                       'Dia focado em recuperação e hidratação 💧',
                       style:
-                          TextStyle(color: AppColors.onSurface, fontSize: 12)),
+                          TextStyle(color: context.onSurface, fontSize: 12)),
                   trailing: schedule.dayId == null
                       ? const Icon(Icons.check_circle, color: AppColors.primary)
                       : null,
@@ -1662,12 +1662,12 @@ class _WeeklyScheduleTabState extends ConsumerState<_WeeklyScheduleTab> {
                           color: Colors.white),
                     ),
                     title: Text('Treino ${day.letra}',
-                        style: const TextStyle(
-                            color: AppColors.onBackground,
+                        style: TextStyle(
+                            color: context.onBackground,
                             fontWeight: FontWeight.bold)),
                     subtitle: Text(day.nome,
-                        style: const TextStyle(
-                            color: AppColors.onSurface, fontSize: 12)),
+                        style: TextStyle(
+                            color: context.onSurface, fontSize: 12)),
                     trailing: isSelected
                         ? const Icon(Icons.check_circle,
                             color: AppColors.primary)

@@ -94,7 +94,7 @@ class _TreinoTab extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Excluir treino?'),
         content: Text(
           'Deseja excluir permanentemente a rotina "$displayName" e todo o histórico de execuções vinculado a ela?',
@@ -125,7 +125,7 @@ class _TreinoTab extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Renomear Treino'),
         content: TextField(
           controller: controller,
@@ -165,7 +165,7 @@ class _TreinoTab extends ConsumerWidget {
   void _showSplitOptions(BuildContext context, WidgetRef ref, WorkoutSplit split) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -185,7 +185,7 @@ class _TreinoTab extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 'Divisão do tipo: ${split.tipo}',
-                style: const TextStyle(color: AppColors.onSurface, fontSize: 12),
+                style: TextStyle(color: context.onSurface, fontSize: 12),
               ),
               const Divider(height: 24),
               ListTile(
@@ -285,10 +285,10 @@ class _TreinoTab extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'SUA DIVISÃO',
                         style: TextStyle(
-                          color: AppColors.onSurface,
+                          color: context.onSurface,
                           fontSize: 11,
                           letterSpacing: 1.5,
                           fontWeight: FontWeight.w600,
@@ -297,7 +297,7 @@ class _TreinoTab extends ConsumerWidget {
                       Text(
                         '(Segure para opções)',
                         style: TextStyle(
-                          color: AppColors.onSurface.withOpacity(0.5),
+                          color: context.onSurface.withOpacity(0.5),
                           fontSize: 10,
                         ),
                       ),
@@ -392,13 +392,13 @@ class _TreinoTab extends ConsumerWidget {
             daysAsync.when(
               data: (days) {
                 if (days.isEmpty) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.all(24),
                     child: Center(
                       child: Text(
                         'Nenhum dia cadastrado para esta divisão.\nUse o botão de ajuste acima para configurar.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.onSurface),
+                        style: TextStyle(color: context.onSurface),
                       ),
                     ),
                   );
@@ -483,7 +483,7 @@ class _ActiveSessionCard extends ConsumerWidget {
                 Text(
                   'Iniciado em: ${WeekUtils.formatDate(session.data)}',
                   style:
-                      const TextStyle(color: AppColors.onSurface, fontSize: 12),
+                      TextStyle(color: context.onSurface, fontSize: 12),
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -492,7 +492,7 @@ class _ActiveSessionCard extends ConsumerWidget {
                     TextButton(
                       onPressed: () => _confirmCancel(context, ref),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.onSurface,
+                        foregroundColor: context.onSurface,
                       ),
                       child: const Text('CANCELAR'),
                     ),
@@ -530,7 +530,7 @@ class _ActiveSessionCard extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Cancelar treino?'),
         content: const Text(
           'Tem certeza que deseja cancelar esta sessão? Todos os logs registrados hoje serão perdidos.',
@@ -592,7 +592,7 @@ class _DayListTile extends ConsumerWidget {
                 preview,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: AppColors.onSurface),
+                style: TextStyle(fontSize: 12, color: context.onSurface),
               ),
             ),
             trailing: const Icon(Icons.chevron_right_rounded, size: 20),
@@ -609,7 +609,7 @@ class _DayListTile extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -648,12 +648,12 @@ class _DayListTile extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               if (exercises.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: Text(
                       'Sem exercícios cadastrados neste dia.',
-                      style: TextStyle(color: AppColors.onSurface),
+                      style: TextStyle(color: context.onSurface),
                     ),
                   ),
                 )
@@ -679,8 +679,8 @@ class _DayListTile extends ConsumerWidget {
                             ),
                             Text(
                               '${ex.grupoMuscular} \u00b7 ${ex.equipamento}${ex.volume != null && ex.volume!.isNotEmpty ? ' \u00b7 ${ex.volume}' : ''}',
-                              style: const TextStyle(
-                                  color: AppColors.onSurface, fontSize: 11),
+                              style: TextStyle(
+                                  color: context.onSurface, fontSize: 11),
                             ),
                           ],
                         ),
@@ -750,7 +750,7 @@ class _DayListTile extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Treino em andamento'),
         content: const Text(
           'Já existe uma sessão de treino iniciada. Deseja cancelá-la para iniciar este novo treino ou prefere retomá-la?',

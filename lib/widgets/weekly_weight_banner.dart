@@ -15,14 +15,14 @@ class WeeklyWeightBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialBanner(
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.surfaceColor,
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       dividerColor: Colors.transparent,
       leading: const Icon(Icons.monitor_weight_rounded,
           color: AppColors.primary, size: 22),
-      content: const Text(
+      content: Text(
         'Peso desta semana ainda não registrado.',
-        style: TextStyle(color: AppColors.onBackground, fontSize: 13),
+        style: TextStyle(color: context.onBackground, fontSize: 13),
       ),
       actions: [
         TextButton(
@@ -39,9 +39,9 @@ class WeeklyWeightBanner extends ConsumerWidget {
               ),
             );
           },
-          child: const Text(
+          child: Text(
             'LEMBRAR EM 24H',
-            style: TextStyle(color: AppColors.onSurface),
+            style: TextStyle(color: context.onSurface),
           ),
         ),
       ],
@@ -53,7 +53,7 @@ class WeeklyWeightBanner extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Peso da semana'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -61,7 +61,7 @@ class WeeklyWeightBanner extends ConsumerWidget {
           children: [
             Text(
               WeekUtils.formatWeekKey(WeekUtils.currentWeekKey()),
-              style: const TextStyle(color: AppColors.onSurface, fontSize: 13),
+              style: TextStyle(color: context.onSurface, fontSize: 13),
             ),
             const SizedBox(height: 12),
             TextField(

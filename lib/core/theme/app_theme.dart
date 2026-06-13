@@ -397,3 +397,12 @@ class AppTheme {
       );
 }
 
+extension ThemeColors on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  Color get onBackground => isDark ? AppColors.onBackground : AppColors.lightOnBackground;
+  Color get onSurface => isDark ? AppColors.onSurface : AppColors.lightOnSurface;
+  Color get divider => isDark ? AppColors.divider : AppColors.lightDivider;
+  Color get cardColor => isDark ? AppColors.card : AppColors.lightCard;
+  Color get surfaceColor => isDark ? AppColors.surface : AppColors.lightSurface;
+}
+

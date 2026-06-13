@@ -36,7 +36,7 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Progresso 📈'),
-          bottom: const TabBar(
+          bottom: TabBar(
             isScrollable: true,
             tabs: [
               Tab(text: 'PESO & FREQ'),
@@ -46,7 +46,7 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
             ],
             indicatorColor: AppColors.primary,
             labelColor: AppColors.primaryLight,
-            unselectedLabelColor: AppColors.onSurface,
+            unselectedLabelColor: context.onSurface,
           ),
         ),
         body: TabBarView(
@@ -143,7 +143,7 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
                                   labelText: 'Filtrar Exercício',
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 ),
-                                dropdownColor: AppColors.card,
+                                dropdownColor: context.cardColor,
                                 items: exercises.map((e) {
                                   return DropdownMenuItem(value: e.id, child: Text(e.nome));
                                 }).toList(),
@@ -339,7 +339,7 @@ class _WeightChart extends StatelessWidget {
             drawHorizontalLine: true,
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: AppColors.divider, strokeWidth: 1),
+                FlLine(color: context.divider, strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             topTitles:
@@ -353,7 +353,7 @@ class _WeightChart extends StatelessWidget {
                 getTitlesWidget: (v, _) => Text(
                   v.toStringAsFixed(1),
                   style:
-                      const TextStyle(color: AppColors.onSurface, fontSize: 10),
+                      TextStyle(color: context.onSurface, fontSize: 10),
                 ),
               ),
             ),
@@ -371,8 +371,8 @@ class _WeightChart extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       'W${parts.length > 1 ? parts[1] : '?'}',
-                      style: const TextStyle(
-                          color: AppColors.onSurface, fontSize: 10),
+                      style: TextStyle(
+                          color: context.onSurface, fontSize: 10),
                     ),
                   );
                 },
@@ -392,7 +392,7 @@ class _WeightChart extends StatelessWidget {
                   radius: 4,
                   color: AppColors.primary,
                   strokeWidth: 2,
-                  strokeColor: AppColors.background,
+                  strokeColor: Theme.of(context).scaffoldBackgroundColor,
                 ),
               ),
               belowBarData: BarAreaData(
@@ -495,14 +495,14 @@ class _ExerciseProgressSliver extends ConsumerWidget {
           // Se houver exercícios de treinos anteriores ou que não estão na divisão atual:
           if (data.exercisesWithoutDay.isNotEmpty) {
             listItems.add(
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(20, 16, 20, 6),
                 child: Text(
                   'OUTROS / ANTERIORES',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onSurface,
+                    color: context.onSurface,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -597,7 +597,7 @@ class _ExerciseCard extends ConsumerWidget {
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         subtitle: Text(
           '${exercise.vezesFeito}× realizado · ${exercise.equipamento}${exercise.volume != null && exercise.volume!.isNotEmpty ? ' · ${exercise.volume}' : ''}',
-          style: const TextStyle(fontSize: 12, color: AppColors.onSurface),
+          style: TextStyle(fontSize: 12, color: context.onSurface),
         ),
         children: [
           FutureBuilder<List<ExerciseLog>>(
@@ -610,11 +610,11 @@ class _ExerciseCard extends ConsumerWidget {
               }
               final logs = snap.data ?? [];
               if (logs.length < 2) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     'Mais dados necessários para o gráfico.',
-                    style: TextStyle(color: AppColors.onSurface, fontSize: 13),
+                    style: TextStyle(color: context.onSurface, fontSize: 13),
                   ),
                 );
               }
@@ -643,12 +643,12 @@ class _ExerciseVolumeChart extends StatelessWidget {
     }).toList();
 
     if (spots.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 130,
         child: Center(
           child: Text(
             'Nenhum volume de treino registrado.',
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ),
       );
@@ -670,7 +670,7 @@ class _ExerciseVolumeChart extends StatelessWidget {
               maxY: maxY,
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (touchedSpot) => AppColors.surface,
+                  getTooltipColor: (touchedSpot) => context.surfaceColor,
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((spot) {
                       final idx = spot.x.toInt();
@@ -679,8 +679,8 @@ class _ExerciseVolumeChart extends StatelessWidget {
                       final vol = LogDao.calcularVolume(log, isUnilateral: isUnilateral);
                       return LineTooltipItem(
                         '${log.peso} kg × ${log.repeticoes} reps\nVol: ${vol.toStringAsFixed(0)} kg',
-                        const TextStyle(
-                          color: AppColors.onBackground,
+                        TextStyle(
+                          color: context.onBackground,
                           fontWeight: FontWeight.bold,
                           fontSize: 10,
                         ),
@@ -693,7 +693,7 @@ class _ExerciseVolumeChart extends StatelessWidget {
                 drawHorizontalLine: true,
                 drawVerticalLine: false,
                 getDrawingHorizontalLine: (_) =>
-                    const FlLine(color: AppColors.divider, strokeWidth: 1),
+                    FlLine(color: context.divider, strokeWidth: 1),
               ),
               titlesData: FlTitlesData(
                 topTitles:
@@ -708,8 +708,8 @@ class _ExerciseVolumeChart extends StatelessWidget {
                     reservedSize: 36,
                     getTitlesWidget: (v, _) => Text(
                       v.toStringAsFixed(0),
-                      style: const TextStyle(
-                          color: AppColors.onSurface, fontSize: 9),
+                      style: TextStyle(
+                          color: context.onSurface, fontSize: 9),
                     ),
                   ),
                 ),
@@ -727,7 +727,7 @@ class _ExerciseVolumeChart extends StatelessWidget {
                       radius: 3,
                       color: AppColors.primary,
                       strokeWidth: 1.5,
-                      strokeColor: AppColors.background,
+                      strokeColor: Theme.of(context).scaffoldBackgroundColor,
                     ),
                   ),
                   belowBarData: BarAreaData(
@@ -740,11 +740,11 @@ class _ExerciseVolumeChart extends StatelessWidget {
           ),
         ),
         if (isUnilateral)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 6),
             child: Text(
               '* Volume bilateral: peso × reps × 2',
-              style: TextStyle(color: AppColors.onSurface, fontSize: 11),
+              style: TextStyle(color: context.onSurface, fontSize: 11),
             ),
           ),
       ],
@@ -762,8 +762,8 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        color: AppColors.onSurface,
+      style: TextStyle(
+        color: context.onSurface,
         fontSize: 10,
         letterSpacing: 1.5,
         fontWeight: FontWeight.w600,
@@ -784,7 +784,7 @@ class _EmptyChart extends StatelessWidget {
         child: Text(
           msg,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.onSurface, height: 1.6),
+          style: TextStyle(color: context.onSurface, height: 1.6),
         ),
       ),
     );
@@ -836,7 +836,7 @@ class _MonthlyFrequencySliver extends ConsumerWidget {
     return monthlySessionsAsync.when(
       data: (months) {
         if (months.isEmpty) {
-          return const SliverToBoxAdapter(
+          return SliverToBoxAdapter(
             child: Card(
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Padding(
@@ -845,7 +845,7 @@ class _MonthlyFrequencySliver extends ConsumerWidget {
                   child: Text(
                     'Nenhum treino concluído ainda.\nInicie e conclua um treino para ver seu histórico mensal.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.onSurface, height: 1.5),
+                    style: TextStyle(color: context.onSurface, height: 1.5),
                   ),
                 ),
               ),
@@ -887,14 +887,14 @@ class _MonthlyFrequencySliver extends ConsumerWidget {
                         ),
                         subtitle: Text(
                           textTrainedDays,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.onSurface,
+                            color: context.onSurface,
                           ),
                         ),
                         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         children: [
-                          const Divider(color: AppColors.divider, height: 16),
+                          Divider(color: context.divider, height: 16),
                           _MonthCalendarGrid(
                             monthDate: m.monthDate,
                             sessions: m.sessions,
@@ -994,10 +994,10 @@ class _MonthCalendarGrid extends StatelessWidget {
                     child: Center(
                       child: Text(
                         h,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
+                          color: context.onSurface,
                         ),
                       ),
                     ),
@@ -1023,10 +1023,10 @@ class _MonthCalendarGrid extends StatelessWidget {
             final daySess = daySessions[dayNum] ?? [];
             final hasTrained = daySess.isNotEmpty;
 
-            Color bgColor = AppColors.surface;
-            Color textColor = AppColors.onSurface;
+            Color bgColor = context.surfaceColor;
+            Color textColor = context.onSurface;
             bool isBold = false;
-            Border? border = Border.all(color: AppColors.divider, width: 0.8);
+            Border? border = Border.all(color: context.divider, width: 0.8);
 
             if (hasTrained) {
               final firstSess = daySess.first;
@@ -1091,7 +1091,7 @@ class _MonthCalendarGrid extends StatelessWidget {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -1104,10 +1104,10 @@ class _MonthCalendarGrid extends StatelessWidget {
             children: [
               Text(
                 'Treinos do dia $day/${month.toString().padLeft(2, '0')}/$year',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onBackground,
+                  color: context.onBackground,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1125,7 +1125,7 @@ class _MonthCalendarGrid extends StatelessWidget {
                         : 'Sem duração registrada';
 
                     return Card(
-                      color: AppColors.surface,
+                      color: context.surfaceColor,
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: color,
@@ -1134,10 +1134,10 @@ class _MonthCalendarGrid extends StatelessWidget {
                         ),
                         title: Text(name),
                         subtitle: Text(duration),
-                        trailing: const Icon(
+                        trailing: Icon(
                           Icons.arrow_forward_ios_rounded,
                           size: 14,
-                          color: AppColors.onSurface,
+                          color: context.onSurface,
                         ),
                         onTap: () {
                           Navigator.pop(ctx); // Fecha o bottom sheet
@@ -1206,9 +1206,9 @@ class _MonthSessionsList extends StatelessWidget {
                   width: 65,
                   child: Text(
                     '$dateStr ($weekdayStr)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.onSurface,
+                      color: context.onSurface,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1239,16 +1239,16 @@ class _MonthSessionsList extends StatelessWidget {
                 ),
                 Text(
                   durationStr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.onSurface,
+                    color: context.onSurface,
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 10,
-                  color: AppColors.onSurface,
+                  color: context.onSurface,
                 ),
               ],
             ),
@@ -1333,13 +1333,13 @@ class _WeeklyVolumeChart extends StatelessWidget {
     final maxY = maxVal > 0 ? maxVal * 1.2 : 1000.0;
 
     if (weeklyVolumes.values.every((v) => v == 0.0)) {
-      return const SizedBox(
+      return SizedBox(
         height: 130,
         child: Center(
           child: Text(
             'Nenhum volume de treino registrado nas últimas semanas.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ),
       );
@@ -1353,7 +1353,7 @@ class _WeeklyVolumeChart extends StatelessWidget {
           maxY: maxY,
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (touchedSpot) => AppColors.surface,
+              getTooltipColor: (touchedSpot) => context.surfaceColor,
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((spot) {
                   final idx = spot.x.toInt();
@@ -1363,7 +1363,7 @@ class _WeeklyVolumeChart extends StatelessWidget {
                   final text = '${dateToFormat(weekStart)}: ${vol.toStringAsFixed(0)} kg';
                   return LineTooltipItem(
                     text,
-                    const TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold, fontSize: 10),
+                    TextStyle(color: context.onBackground, fontWeight: FontWeight.bold, fontSize: 10),
                   );
                 }).toList();
               },
@@ -1372,7 +1372,7 @@ class _WeeklyVolumeChart extends StatelessWidget {
           gridData: FlGridData(
             drawHorizontalLine: true,
             drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => const FlLine(color: AppColors.divider, strokeWidth: 1),
+            getDrawingHorizontalLine: (_) => FlLine(color: context.divider, strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -1390,7 +1390,7 @@ class _WeeklyVolumeChart extends StatelessWidget {
                   final text = '${date.day}/${date.month}';
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(text, style: const TextStyle(color: AppColors.onSurface, fontSize: 8)),
+                    child: Text(text, style: TextStyle(color: context.onSurface, fontSize: 8)),
                   );
                 },
               ),
@@ -1401,7 +1401,7 @@ class _WeeklyVolumeChart extends StatelessWidget {
                 reservedSize: 36,
                 getTitlesWidget: (v, _) => Text(
                   v >= 1000 ? '${(v / 1000).toStringAsFixed(1)}k' : v.toStringAsFixed(0),
-                  style: const TextStyle(color: AppColors.onSurface, fontSize: 9),
+                  style: TextStyle(color: context.onSurface, fontSize: 9),
                 ),
               ),
             ),
@@ -1437,12 +1437,12 @@ class _LoadEvolutionChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final exLogs = logs.where((l) => l.exerciseId == exerciseId).toList();
     if (exLogs.length < 2) {
-      return const SizedBox(
+      return SizedBox(
         height: 120,
         child: Center(
           child: Text(
             'Histórico insuficiente para este exercício.',
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ),
       );
@@ -1468,12 +1468,12 @@ class _LoadEvolutionChart extends StatelessWidget {
     }).toList();
 
     if (spots.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 120,
         child: Center(
           child: Text(
             'Histórico insuficiente para este exercício.',
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ),
       );
@@ -1492,7 +1492,7 @@ class _LoadEvolutionChart extends StatelessWidget {
           maxY: maxY,
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (touchedSpot) => AppColors.surface,
+              getTooltipColor: (touchedSpot) => context.surfaceColor,
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((spot) {
                   final idx = spot.x.toInt();
@@ -1503,7 +1503,7 @@ class _LoadEvolutionChart extends StatelessWidget {
                   final dateStr = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
                   return LineTooltipItem(
                     '$weight kg\n$dateStr',
-                    const TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold, fontSize: 10),
+                    TextStyle(color: context.onBackground, fontWeight: FontWeight.bold, fontSize: 10),
                   );
                 }).toList();
               },
@@ -1512,7 +1512,7 @@ class _LoadEvolutionChart extends StatelessWidget {
           gridData: FlGridData(
             drawHorizontalLine: true,
             drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => const FlLine(color: AppColors.divider, strokeWidth: 1),
+            getDrawingHorizontalLine: (_) => FlLine(color: context.divider, strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -1530,7 +1530,7 @@ class _LoadEvolutionChart extends StatelessWidget {
                   final date = sessionDates[sId]!;
                   return Text(
                     '${date.day}/${date.month}',
-                    style: const TextStyle(color: AppColors.onSurface, fontSize: 8),
+                    style: TextStyle(color: context.onSurface, fontSize: 8),
                   );
                 },
               ),
@@ -1539,7 +1539,7 @@ class _LoadEvolutionChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 32,
-                getTitlesWidget: (v, _) => Text(v.toStringAsFixed(0), style: const TextStyle(color: AppColors.onSurface, fontSize: 9)),
+                getTitlesWidget: (v, _) => Text(v.toStringAsFixed(0), style: TextStyle(color: context.onSurface, fontSize: 9)),
               ),
             ),
           ),
@@ -1595,10 +1595,10 @@ class _PersonalRecordsList extends StatelessWidget {
       ..sort((a, b) => b.maxWeight.compareTo(a.maxWeight));
 
     if (recordItems.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Center(
-          child: Text('Nenhum recorde registrado ainda.', style: TextStyle(color: AppColors.onSurface)),
+          child: Text('Nenhum recorde registrado ainda.', style: TextStyle(color: context.onSurface)),
         ),
       );
     }
@@ -1636,7 +1636,7 @@ class _RecordItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       child: ListTile(
         title: Text(exerciseName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Text('Recorde em: $dateStr', style: const TextStyle(fontSize: 11, color: AppColors.onSurface)),
+        subtitle: Text('Recorde em: $dateStr', style: TextStyle(fontSize: 11, color: context.onSurface)),
         trailing: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
@@ -1715,13 +1715,13 @@ class _GoalsManager extends ConsumerWidget {
           ),
         ),
         if (goals.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(24.0),
             child: Center(
               child: Text(
                 'Nenhuma meta definida. Defina metas para peso corporal ou carga de exercício!',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.onSurface, fontSize: 13),
+                style: TextStyle(color: context.onSurface, fontSize: 13),
               ),
             ),
           )
@@ -1815,7 +1815,7 @@ class _GoalsManager extends ConsumerWidget {
                                 ),
                                 Text(
                                   'Criada em: ${goal.dataCriacao}',
-                                  style: const TextStyle(fontSize: 10, color: AppColors.onSurface),
+                                  style: TextStyle(fontSize: 10, color: context.onSurface),
                                 ),
                               ],
                             ),
@@ -1883,7 +1883,7 @@ class _GoalsManager extends ConsumerWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
-          backgroundColor: AppColors.card,
+          backgroundColor: context.cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Row(
             children: [
@@ -1912,16 +1912,16 @@ class _GoalsManager extends ConsumerWidget {
             children: [
               DropdownButtonFormField<String>(
                 value: selectedType,
-                dropdownColor: AppColors.card,
+                dropdownColor: context.cardColor,
                 borderRadius: BorderRadius.circular(16),
                 decoration: InputDecoration(
                   labelText: 'Tipo de Meta',
-                  labelStyle: const TextStyle(color: AppColors.onSurface, fontSize: 13),
+                  labelStyle: TextStyle(color: context.onSurface, fontSize: 13),
                   filled: true,
                   fillColor: Colors.black.withOpacity(0.2),
-                  prefixIcon: const Icon(Icons.category_rounded, color: AppColors.onSurface, size: 20),
+                  prefixIcon: Icon(Icons.category_rounded, color: context.onSurface, size: 20),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider, width: 1)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: context.divider, width: 1)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
@@ -1964,16 +1964,16 @@ class _GoalsManager extends ConsumerWidget {
                 else
                   DropdownButtonFormField<Exercise>(
                     value: exercises.contains(selectedExercise) ? selectedExercise : null,
-                    dropdownColor: AppColors.card,
+                    dropdownColor: context.cardColor,
                     borderRadius: BorderRadius.circular(16),
                     decoration: InputDecoration(
                       labelText: 'Selecione o Exercício',
-                      labelStyle: const TextStyle(color: AppColors.onSurface, fontSize: 13),
+                      labelStyle: TextStyle(color: context.onSurface, fontSize: 13),
                       filled: true,
                       fillColor: Colors.black.withOpacity(0.2),
-                      prefixIcon: const Icon(Icons.fitness_center_rounded, color: AppColors.onSurface, size: 20),
+                      prefixIcon: Icon(Icons.fitness_center_rounded, color: context.onSurface, size: 20),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider, width: 1)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: context.divider, width: 1)),
                       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
@@ -1996,15 +1996,15 @@ class _GoalsManager extends ConsumerWidget {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Valor Alvo',
-                  labelStyle: const TextStyle(color: AppColors.onSurface, fontSize: 13),
+                  labelStyle: TextStyle(color: context.onSurface, fontSize: 13),
                   hintText: '80.0',
                   suffixText: 'kg',
                   suffixStyle: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold),
                   filled: true,
                   fillColor: Colors.black.withOpacity(0.2),
-                  prefixIcon: const Icon(Icons.ads_click_rounded, color: AppColors.onSurface, size: 20),
+                  prefixIcon: Icon(Icons.ads_click_rounded, color: context.onSurface, size: 20),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider, width: 1)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: context.divider, width: 1)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
@@ -2015,7 +2015,7 @@ class _GoalsManager extends ConsumerWidget {
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.onSurface,
+                foregroundColor: context.onSurface,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -2077,14 +2077,14 @@ class _RelativeStrengthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (userWeight <= 0) {
-      return const Card(
+      return Card(
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
             'Registre seu peso corporal no perfil para calcular seu Índice de Força Relativa.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.onSurface, fontSize: 13),
+            style: TextStyle(color: context.onSurface, fontSize: 13),
           ),
         ),
       );
@@ -2188,7 +2188,7 @@ class _RelativeStrengthCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Soma 1RM: ${totalBest1RM.toStringAsFixed(1)} kg (${strengthRatio.toStringAsFixed(2)}x peso)',
-                        style: const TextStyle(fontSize: 12, color: AppColors.onSurface),
+                        style: TextStyle(fontSize: 12, color: context.onSurface),
                       ),
                     ],
                   ),
@@ -2222,7 +2222,7 @@ class _RelativeStrengthCard extends StatelessWidget {
                 children: [
                   Text(
                     '${prevLevelRatio.toStringAsFixed(1)}x',
-                    style: const TextStyle(fontSize: 10, color: AppColors.onSurface),
+                    style: TextStyle(fontSize: 10, color: context.onSurface),
                   ),
                   Text(
                     'Próximo nível: ${nextLevelRatio.toStringAsFixed(1)}x',
@@ -2230,7 +2230,7 @@ class _RelativeStrengthCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const Divider(color: AppColors.divider, height: 24),
+              Divider(color: context.divider, height: 24),
               const Text(
                 'MELHORES ESTIMATIVAS DE 1RM:',
                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primaryLight, letterSpacing: 1.0),
@@ -2349,13 +2349,13 @@ class _MuscleFocusChart extends StatelessWidget {
     final totalVol = muscleVolumes.values.fold<double>(0.0, (sum, val) => sum + val);
 
     if (muscleVolumes.isEmpty || totalVol == 0.0) {
-      return const SizedBox(
+      return SizedBox(
         height: 120,
         child: Center(
           child: Text(
             'Histórico de treinos insuficiente para calcular distribuição.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+            style: TextStyle(color: context.onSurface, fontSize: 12),
           ),
         ),
       );
@@ -2430,7 +2430,7 @@ class _MuscleFocusChart extends StatelessWidget {
                             ),
                             Text(
                               '${percentage.toStringAsFixed(1)}%',
-                              style: const TextStyle(fontSize: 11, color: AppColors.onSurface),
+                              style: TextStyle(fontSize: 11, color: context.onSurface),
                             ),
                           ],
                         ),
@@ -2604,7 +2604,7 @@ class _BodyMeasurementsTabState extends ConsumerState<_BodyMeasurementsTab> {
                     Icons.straighten_rounded,
                     size: 64,
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? AppColors.onSurface.withValues(alpha: 0.5)
+                        ? context.onSurface.withValues(alpha: 0.5)
                         : AppColors.lightOnSurface.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
@@ -2804,7 +2804,7 @@ class _MetricSummaryCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.onSurface : AppColors.lightOnSurface,
+                    color: isDark ? context.onSurface : AppColors.lightOnSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -2818,7 +2818,7 @@ class _MetricSummaryCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: isDark ? AppColors.onBackground : AppColors.lightOnBackground,
+              color: isDark ? context.onBackground : AppColors.lightOnBackground,
             ),
           ),
           const SizedBox(height: 4),
@@ -2886,7 +2886,7 @@ class _MeasurementsChart extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.onSurface
+                ? context.onSurface
                 : AppColors.lightOnSurface,
             fontSize: 12,
           ),
@@ -2907,7 +2907,7 @@ class _MeasurementsChart extends StatelessWidget {
             drawHorizontalLine: true,
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: AppColors.divider, strokeWidth: 1),
+                FlLine(color: context.divider, strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -2920,7 +2920,7 @@ class _MeasurementsChart extends StatelessWidget {
                   v.toStringAsFixed(1),
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? AppColors.onSurface
+                        ? context.onSurface
                         : AppColors.lightOnSurface,
                     fontSize: 10,
                   ),
@@ -2946,7 +2946,7 @@ class _MeasurementsChart extends StatelessWidget {
                       '$day/$month',
                       style: TextStyle(
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.onSurface
+                            ? context.onSurface
                             : AppColors.lightOnSurface,
                         fontSize: 9,
                       ),
@@ -3085,7 +3085,7 @@ class _MeasurementCardState extends State<_MeasurementCard> {
             ),
             trailing: Icon(
               _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-              color: AppColors.onSurface,
+              color: context.onSurface,
             ),
           ),
           if (_expanded) ...[
@@ -3146,7 +3146,7 @@ class _MeasurementCardState extends State<_MeasurementCard> {
                         child: Container(
                           height: 200,
                           width: double.infinity,
-                          color: isDark ? AppColors.surface : AppColors.lightSurface,
+                          color: isDark ? context.surfaceColor : AppColors.lightSurface,
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
@@ -3207,7 +3207,7 @@ class _MeasurementCardState extends State<_MeasurementCard> {
                         label: const Text('Editar', style: TextStyle(fontSize: 12)),
                         onPressed: widget.onEdit,
                         style: TextButton.styleFrom(
-                          foregroundColor: isDark ? AppColors.onBackground : AppColors.lightOnBackground,
+                          foregroundColor: isDark ? context.onBackground : AppColors.lightOnBackground,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -3284,7 +3284,7 @@ class _MeasurementCardState extends State<_MeasurementCard> {
               text: '$label: ',
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? AppColors.onSurface : AppColors.lightOnSurface,
+                color: isDark ? context.onSurface : AppColors.lightOnSurface,
               ),
             ),
             TextSpan(
@@ -3292,7 +3292,7 @@ class _MeasurementCardState extends State<_MeasurementCard> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.onBackground : AppColors.lightOnBackground,
+                color: isDark ? context.onBackground : AppColors.lightOnBackground,
               ),
             ),
             if (diffText.isNotEmpty)
@@ -3342,7 +3342,7 @@ class _MeasurementCardState extends State<_MeasurementCard> {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: isDark ? AppColors.onSurface : AppColors.lightOnSurface,
+              color: isDark ? context.onSurface : AppColors.lightOnSurface,
             ),
           ),
           const SizedBox(height: 2),
@@ -3353,7 +3353,7 @@ class _MeasurementCardState extends State<_MeasurementCard> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.onBackground : AppColors.lightOnBackground,
+                  color: isDark ? context.onBackground : AppColors.lightOnBackground,
                 ),
               ),
               if (diffText.isNotEmpty) ...[

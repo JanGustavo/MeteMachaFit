@@ -98,10 +98,10 @@ class SplashPage extends StatelessWidget {
                             letterSpacing: -2,
                           ),
                       children: [
-                        const TextSpan(
+                        TextSpan(
                           text: 'METE\n',
                           style: TextStyle(
-                            color: AppColors.onBackground,
+                            color: context.onBackground,
                             fontWeight: FontWeight.w900,
                           ),
                         ),

@@ -81,10 +81,10 @@ class SplitSelectionPage extends ConsumerWidget {
                 const SizedBox(height: 24),
               ] else ...[
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Selecione uma divisão abaixo para adicioná-la à sua lista de treinos ativos.',
                   style: TextStyle(
-                    color: AppColors.onSurface,
+                    color: context.onSurface,
                     fontSize: 14,
                   ),
                 ),
@@ -200,10 +200,10 @@ class SplitSelectionPage extends ConsumerWidget {
                         ),
                       ),
                       subtitle: 'Crie sua própria rotina',
-                      iconWidget: const Icon(
+                      iconWidget: Icon(
                         Icons.assignment_rounded,
                         size: 44,
-                        color: AppColors.onSurface,
+                        color: context.onSurface,
                       ),
                       desc: 'Crie um treino do zero, adicionando dias e exercícios conforme sua necessidade.',
                       daysInfo: const [
@@ -241,7 +241,7 @@ class SplitSelectionPage extends ConsumerWidget {
               ),
 
               // Footer Text
-              const Center(
+              Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Row(
@@ -249,7 +249,7 @@ class SplitSelectionPage extends ConsumerWidget {
                     children: [
                       Text(
                         'Toque para ver os detalhes',
-                        style: TextStyle(color: AppColors.onSurface, fontSize: 13),
+                        style: TextStyle(color: context.onSurface, fontSize: 13),
                       ),
                       SizedBox(width: 4),
                       Icon(Icons.star_rounded, size: 14, color: AppColors.primaryLight),
@@ -278,10 +278,10 @@ class SplitSelectionPage extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: EdgeInsets.zero,
-      color: AppColors.card,
+      color: context.cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.divider, width: 1),
+        side: BorderSide(color: context.divider, width: 1),
       ),
       child: InkWell(
         onTap: () => _showDetailsSheet(
@@ -304,8 +304,8 @@ class SplitSelectionPage extends ConsumerWidget {
               // Subtítulo
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: AppColors.onSurface,
+                style: TextStyle(
+                  color: context.onSurface,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
@@ -333,7 +333,7 @@ class SplitSelectionPage extends ConsumerWidget {
   }) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -354,7 +354,7 @@ class SplitSelectionPage extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: const TextStyle(color: AppColors.onSurface, fontSize: 13),
+                        style: TextStyle(color: context.onSurface, fontSize: 13),
                       ),
                     ],
                   ),
@@ -400,7 +400,7 @@ class SplitSelectionPage extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Text(
                         info,
-                        style: const TextStyle(color: AppColors.onBackground, fontSize: 13),
+                        style: TextStyle(color: context.onBackground, fontSize: 13),
                       ),
                     ],
                   ),
@@ -613,7 +613,7 @@ class SplitSelectionPage extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            backgroundColor: AppColors.background,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(
               children: [
@@ -644,13 +644,13 @@ class SplitSelectionPage extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.card,
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.divider),
+                          border: Border.all(color: context.divider),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Cole o código JSON do seu treino abaixo. Se tiver apenas o texto simples (ex: do WhatsApp), clique em "Formatar com IA" no botão abaixo para organizá-lo automaticamente.',
-                          style: TextStyle(fontSize: 12, color: AppColors.onSurface, height: 1.4),
+                          style: TextStyle(fontSize: 12, color: context.onSurface, height: 1.4),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -725,13 +725,13 @@ class SplitSelectionPage extends ConsumerWidget {
                               },
                               style: OutlinedButton.styleFrom(
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                side: const BorderSide(color: AppColors.divider),
+                                side: BorderSide(color: context.divider),
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              icon: const Icon(Icons.copy_all_rounded, size: 16, color: AppColors.onSurface),
-                              label: const Text(
+                              icon: Icon(Icons.copy_all_rounded, size: 16, color: context.onSurface),
+                              label: Text(
                                 'Copiar Prompt',
-                                style: TextStyle(fontSize: 12, color: AppColors.onSurface),
+                                style: TextStyle(fontSize: 12, color: context.onSurface),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -742,17 +742,17 @@ class SplitSelectionPage extends ConsumerWidget {
                       TextField(
                         controller: textCtrl,
                         maxLines: 8,
-                        style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: AppColors.onBackground),
+                        style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: context.onBackground),
                         decoration: InputDecoration(
                           hintText: 'Cole o código JSON aqui...',
                           alignLabelWithHint: true,
                           contentPadding: const EdgeInsets.all(12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.divider),
+                            borderSide: BorderSide(color: context.divider),
                           ),
                           filled: true,
-                          fillColor: AppColors.card,
+                          fillColor: context.cardColor,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -781,10 +781,10 @@ class SplitSelectionPage extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Limpar biblioteca (remove exercícios padrão não utilizados)',
-                                  style: TextStyle(fontSize: 11, color: AppColors.onSurface),
+                                  style: TextStyle(fontSize: 11, color: context.onSurface),
                                 ),
                               ),
                             ],
@@ -797,9 +797,9 @@ class SplitSelectionPage extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      Text(
                         'Cole o texto bruto do treino (WhatsApp, Notas, etc.). A IA estruturará tudo no formato correto para o aplicativo de forma automática.',
-                        style: TextStyle(fontSize: 12, color: AppColors.onSurface, height: 1.4),
+                        style: TextStyle(fontSize: 12, color: context.onSurface, height: 1.4),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -812,10 +812,10 @@ class SplitSelectionPage extends ConsumerWidget {
                           contentPadding: const EdgeInsets.all(12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.divider),
+                            borderSide: BorderSide(color: context.divider),
                           ),
                           filled: true,
-                          fillColor: AppColors.card,
+                          fillColor: context.cardColor,
                         ),
                       ),
                       if (errorMessage.isNotEmpty) ...[
@@ -1104,7 +1104,7 @@ class SplitSelectionPage extends ConsumerWidget {
                             showDialog(
                               context: context,
                               builder: (errCtx) => AlertDialog(
-                                backgroundColor: AppColors.card,
+                                backgroundColor: context.cardColor,
                                 title: const Text('Erro na Importação'),
                                 content:
                                     Text('Não foi possível importar o treino. Detalhes:\n$e'),

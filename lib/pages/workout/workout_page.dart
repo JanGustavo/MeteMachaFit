@@ -571,7 +571,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  color: AppColors.onSurface,
+                  color: context.onSurface,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () {
@@ -635,7 +635,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
       barrierDismissible: true,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: AppColors.card,
+          backgroundColor: context.cardColor,
           title: Row(
             children: const [
               Icon(Icons.warning_amber_rounded, color: AppColors.warning),
@@ -648,9 +648,9 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Você ainda não registrou nenhuma série para os seguintes exercícios:',
-                  style: TextStyle(color: AppColors.onSurface),
+                  style: TextStyle(color: context.onSurface),
                 ),
                 const SizedBox(height: 12),
                 ...uncompleted.map((entry) => Padding(
@@ -667,8 +667,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                           Expanded(
                             child: Text(
                               entry.value.nome,
-                              style: const TextStyle(
-                                color: AppColors.onBackground,
+                              style: TextStyle(
+                                color: context.onBackground,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -677,9 +677,9 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                       ),
                     )),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Deseja finalizar o treino mesmo assim ou voltar para realizá-los?',
-                  style: TextStyle(color: AppColors.onSurface),
+                  style: TextStyle(color: context.onSurface),
                 ),
               ],
             ),
@@ -775,8 +775,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.card.withOpacity(0.95),
-                      AppColors.card.withOpacity(0.85),
+                      context.cardColor.withOpacity(0.95),
+                      context.cardColor.withOpacity(0.85),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -845,7 +845,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.onSurface.withOpacity(0.8),
+                        color: context.onSurface.withOpacity(0.8),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -969,10 +969,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.home_rounded, size: 18, color: AppColors.onSurface),
+                            Icon(Icons.home_rounded, size: 18, color: context.onSurface),
                             SizedBox(width: 8),
                             Text(
                               'VOLTAR AO INÍCIO',
@@ -980,7 +980,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                                 letterSpacing: 1,
-                                color: AppColors.onBackground,
+                                color: context.onBackground,
                               ),
                             ),
                           ],
@@ -1039,9 +1039,9 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: AppColors.onSurface,
+                    color: context.onSurface,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
                   ),
@@ -1068,7 +1068,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
   void _showMusicBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1080,7 +1080,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
   void _showAddReferenceBottomSheet(BuildContext context, Exercise ex) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1108,10 +1108,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.onSurface)),
+          Text(label, style: TextStyle(color: context.onSurface)),
           Text(value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700, color: AppColors.onBackground)),
+              style: TextStyle(
+                  fontWeight: FontWeight.w700, color: context.onBackground)),
         ],
       ),
     );
@@ -1226,8 +1226,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 14, color: AppColors.onSurface),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 14, color: context.onSurface),
                         onPressed: _exercises.length > 1
                             ? () async {
                                 setState(() {
@@ -1242,7 +1242,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                       const SizedBox(width: 6),
                       PopupMenuButton<int>(
                         tooltip: 'Selecionar exercício',
-                        color: AppColors.card,
+                        color: context.cardColor,
                         onSelected: (index) async {
                           setState(() {
                             _currentIndex = index;
@@ -1273,7 +1273,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                                             : FontWeight.normal,
                                         color: isCurrent
                                             ? AppColors.primaryLight
-                                            : AppColors.onBackground,
+                                            : context.onBackground,
                                       ),
                                     ),
                                   ),
@@ -1287,15 +1287,15 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                           children: [
                             Text(
                               '${_currentIndex + 1} / ${_exercises.length}',
-                              style: const TextStyle(
-                                color: AppColors.onBackground,
+                              style: TextStyle(
+                                color: context.onBackground,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
                             ),
                             const SizedBox(width: 2),
-                            const Icon(Icons.arrow_drop_down_rounded,
-                                color: AppColors.onSurface, size: 18),
+                            Icon(Icons.arrow_drop_down_rounded,
+                                color: context.onSurface, size: 18),
                           ],
                         ),
                       ),
@@ -1304,8 +1304,8 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.arrow_forward_ios_rounded,
-                            size: 14, color: AppColors.onSurface),
+                        icon: Icon(Icons.arrow_forward_ios_rounded,
+                            size: 14, color: context.onSurface),
                         onPressed: _exercises.length > 1
                             ? () async {
                                 setState(() {
@@ -1374,10 +1374,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                       else
                         GestureDetector(
                           onTap: () => _showAddReferenceBottomSheet(context, ex),
-                          child: const _BadgeTag(
+                          child: _BadgeTag(
                             label: 'Adicionar referência',
                             icon: Icons.add_circle_outline_rounded,
-                            color: AppColors.onSurface,
+                            color: context.onSurface,
                           ),
                         ),
                     ],
@@ -1390,9 +1390,9 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.card,
+                        color: context.cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+                        border: Border.all(color: context.divider.withOpacity(0.5)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1414,9 +1414,9 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                           const SizedBox(height: 6),
                           Text(
                             ex.observacoes!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.onBackground,
+                              color: context.onBackground,
                               height: 1.4,
                             ),
                           ),
@@ -1449,10 +1449,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
 
                   // ── Modo de Execução ──
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'MODO DE EXECUÇÃO',
                     style: TextStyle(
-                      color: AppColors.onSurface,
+                      color: context.onSurface,
                       fontSize: 11,
                       letterSpacing: 1.5,
                       fontWeight: FontWeight.w600,
@@ -1484,10 +1484,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                   // ── Lado (apenas se unilateral) ───────────────────
                   if (_executandoUnilateral) ...[
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'LADO EM EXECUÇÃO',
                       style: TextStyle(
-                        color: AppColors.onSurface,
+                        color: context.onSurface,
                         fontSize: 11,
                         letterSpacing: 1.5,
                         fontWeight: FontWeight.w600,
@@ -1508,10 +1508,10 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
 
                   // ── Equipamento Utilizado (Sobrescrever Recomendação) ──
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'EQUIPAMENTO UTILIZADO',
                     style: TextStyle(
-                      color: AppColors.onSurface,
+                      color: context.onSurface,
                       fontSize: 11,
                       letterSpacing: 1.5,
                       fontWeight: FontWeight.w600,
@@ -1524,7 +1524,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    dropdownColor: AppColors.card,
+                    dropdownColor: context.cardColor,
                     items: {
                       if (_equipamentoSelecionado != null &&
                           !equipmentOptions.contains(_equipamentoSelecionado))
@@ -1593,9 +1593,9 @@ class _RestBanner extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        color: AppColors.card,
-        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        border: Border(bottom: BorderSide(color: context.divider)),
       ),
       child: Row(
         children: [
@@ -1608,28 +1608,28 @@ class _RestBanner extends StatelessWidget {
                 CircularProgressIndicator(
                   value: progress,
                   strokeWidth: 3,
-                  backgroundColor: AppColors.divider,
+                  backgroundColor: context.divider,
                   valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                 ),
                 Text(
                   '$m:$s',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onBackground,
+                    color: context.onBackground,
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 14),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'DESCANSO',
                 style: TextStyle(
-                  color: AppColors.onSurface,
+                  color: context.onSurface,
                   fontSize: 10,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w600,
@@ -1637,7 +1637,7 @@ class _RestBanner extends StatelessWidget {
               ),
               Text(
                 'Próxima série quando pronto',
-                style: TextStyle(color: AppColors.onSurface, fontSize: 12),
+                style: TextStyle(color: context.onSurface, fontSize: 12),
               ),
             ],
           ),
@@ -1647,7 +1647,7 @@ class _RestBanner extends StatelessWidget {
             child: const Text('Pular'),
           ),
           IconButton(
-            icon: const Icon(Icons.close_rounded, color: AppColors.onSurface, size: 20),
+            icon: Icon(Icons.close_rounded, color: context.onSurface, size: 20),
             onPressed: onSkip,
             tooltip: 'Fechar',
           ),
@@ -1675,9 +1675,9 @@ class _PreviousPerformance extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1685,10 +1685,10 @@ class _PreviousPerformance extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'ÚLTIMO TREINO',
                 style: TextStyle(
-                  color: AppColors.onSurface,
+                  color: context.onSurface,
                   fontSize: 10,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w600,
@@ -1719,13 +1719,13 @@ class _PreviousPerformance extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   'S${l.serie}: ${l.peso}kg × ${l.repeticoes}$ladoStr$eqStr',
-                  style: const TextStyle(
-                    color: AppColors.onBackground,
+                  style: TextStyle(
+                    color: context.onBackground,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1786,8 +1786,8 @@ class _SetsList extends StatelessWidget {
                 ),
                 child: Text(
                   formattedText,
-                  style: const TextStyle(
-                    color: AppColors.onBackground,
+                  style: TextStyle(
+                    color: context.onBackground,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1871,8 +1871,8 @@ class _InputRow extends StatelessWidget {
           children: [
             Text(
               'SÉRIE $serie',
-              style: const TextStyle(
-                color: AppColors.onSurface,
+              style: TextStyle(
+                color: context.onSurface,
                 fontSize: 11,
                 letterSpacing: 1.5,
                 fontWeight: FontWeight.w600,
@@ -1954,17 +1954,17 @@ class _CircleButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: disabled
-                ? AppColors.surface.withOpacity(0.6)
-                : AppColors.surface,
+                ? context.surfaceColor.withOpacity(0.6)
+                : context.surfaceColor,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: context.divider),
           ),
           child: Center(
             child: Icon(
               icon,
               size: size * 0.5,
               color: disabled
-                  ? AppColors.onSurface.withOpacity(0.5)
+                  ? context.onSurface.withOpacity(0.5)
                   : AppColors.primaryLight,
             ),
           ),
@@ -2058,10 +2058,10 @@ class _NumberFieldState extends State<_NumberField> {
             textAlign: TextAlign.center,
             keyboardType:
                 TextInputType.numberWithOptions(decimal: widget.decimal),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppColors.onBackground,
+              color: context.onBackground,
             ),
             decoration: InputDecoration(
               labelText: widget.label,
@@ -2105,9 +2105,9 @@ class _ActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.divider)),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        border: Border(top: BorderSide(color: context.divider)),
       ),
       child: Row(
         children: [
@@ -2170,13 +2170,13 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.divider),
       ),
       child: Text(
         label,
-        style: const TextStyle(color: AppColors.onSurface, fontSize: 11),
+        style: TextStyle(color: context.onSurface, fontSize: 11),
       ),
     );
   }
@@ -2270,14 +2270,14 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         title: const Text('Adicionar App de Música'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'Digite o nome do aplicativo e o ID do pacote Android (Package Name) para abrir diretamente.',
-              style: TextStyle(fontSize: 12, color: AppColors.onSurface),
+              style: TextStyle(fontSize: 12, color: context.onSurface),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -2285,9 +2285,9 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
               decoration: const InputDecoration(
                 labelText: 'Nome do Aplicativo',
                 hintText: 'Ex: Poweramp, VLC, Musicolet',
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.divider)),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.divider)),
               ),
-              style: const TextStyle(color: AppColors.onBackground),
+              style: const TextStyle(color: context.onBackground),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -2295,9 +2295,9 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
               decoration: const InputDecoration(
                 labelText: 'ID do Pacote Android (Package Name)',
                 hintText: 'Ex: com.maxmpz.audioplayer',
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.divider)),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.divider)),
               ),
-              style: const TextStyle(color: AppColors.onBackground),
+              style: const TextStyle(color: context.onBackground),
             ),
           ],
         ),
@@ -2330,8 +2330,8 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
 
     return Container(
       padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 24),
-      decoration: const BoxDecoration(
-        color: AppColors.card,
+      decoration: BoxDecoration(
+        color: context.cardColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
@@ -2345,7 +2345,7 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.divider,
+                  color: context.divider,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -2353,7 +2353,7 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.music_note_rounded, color: AppColors.primaryLight),
                     SizedBox(width: 8),
@@ -2362,13 +2362,13 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.onBackground,
+                        color: context.onBackground,
                       ),
                     ),
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.onSurface),
+                  icon: Icon(Icons.close, color: context.onSurface),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -2377,9 +2377,9 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(color: context.divider),
               ),
               child: Row(
                 children: [
@@ -2410,10 +2410,10 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                       children: [
                         Text(
                           musicChannels[musicState.currentChannelIndex].name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.onBackground,
+                            color: context.onBackground,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -2421,9 +2421,9 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                         const SizedBox(height: 2),
                         Text(
                           musicChannels[musicState.currentChannelIndex].genre,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.onSurface,
+                            color: context.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -2434,15 +2434,15 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                   IconButton(
                     icon: Icon(
                       musicState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      color: AppColors.onBackground,
+                      color: context.onBackground,
                       size: 28,
                     ),
                     onPressed: () => musicNotifier.togglePlay(),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.stop_rounded,
-                      color: AppColors.onSurface,
+                      color: context.onSurface,
                       size: 24,
                     ),
                     onPressed: () => musicNotifier.stop(),
@@ -2451,12 +2451,12 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Estações de Foco / Energia',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.onSurface,
+                color: context.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -2476,10 +2476,10 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+                          color: isSelected ? AppColors.primary.withOpacity(0.1) : context.surfaceColor,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.divider,
+                            color: isSelected ? AppColors.primary : context.divider,
                             width: 1.5,
                           ),
                         ),
@@ -2490,16 +2490,16 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? AppColors.primaryLight : AppColors.onBackground,
+                                color: isSelected ? AppColors.primaryLight : context.onBackground,
                               ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 2),
                             Text(
                               channel.genre.split(' / ').first,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
-                                color: AppColors.onSurface,
+                                color: context.onSurface,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -2512,12 +2512,12 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
               }),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Abrir em aplicativos externos',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.onSurface,
+                color: context.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -2602,19 +2602,19 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                       width: 95,
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: context.surfaceColor,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.divider),
+                        border: Border.all(color: context.divider),
                       ),
                       child: Column(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: const BoxDecoration(
-                              color: AppColors.divider,
+                              color: context.divider,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.add_rounded, color: AppColors.onSurface, size: 20),
+                            child: const Icon(Icons.add_rounded, color: context.onSurface, size: 20),
                           ),
                           const SizedBox(height: 8),
                           const Text(
@@ -2622,7 +2622,7 @@ class _WorkoutMusicPanelState extends ConsumerState<_WorkoutMusicPanel> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.onSurface,
+                              color: context.onSurface,
                             ),
                           ),
                         ],
@@ -2697,9 +2697,9 @@ class _MusicAppLinkButton extends StatelessWidget {
         width: 95,
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(color: context.divider),
         ),
         child: Column(
           children: [
@@ -2715,10 +2715,10 @@ class _MusicAppLinkButton extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.onBackground,
+                color: context.onBackground,
               ),
             ),
           ],
@@ -2865,23 +2865,23 @@ class _AddReferencePanelState extends State<_AddReferencePanel> with WidgetsBind
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.divider,
+                color: context.divider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           Text(
             'Execução: ${widget.exercise.nome}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.onBackground,
+              color: context.onBackground,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Busque a execução no YouTube ou TikTok. Ao copiar o link do vídeo e retornar para o app, você poderá colar e salvar o link abaixo como referência definitiva para este exercício.',
-            style: TextStyle(fontSize: 13, color: AppColors.onSurface),
+            style: TextStyle(fontSize: 13, color: context.onSurface),
           ),
           const SizedBox(height: 16),
           Row(
@@ -2953,7 +2953,7 @@ class _AddReferencePanelState extends State<_AddReferencePanel> with WidgetsBind
                   const SizedBox(height: 6),
                   Text(
                     _detectedClipboardLink!,
-                    style: const TextStyle(fontSize: 12, color: AppColors.onBackground),
+                    style: TextStyle(fontSize: 12, color: context.onBackground),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -2981,9 +2981,9 @@ class _AddReferencePanelState extends State<_AddReferencePanel> with WidgetsBind
             decoration: InputDecoration(
               labelText: 'Link de referência manual',
               hintText: 'https://www.youtube.com/watch?...',
-              labelStyle: const TextStyle(color: AppColors.onSurface),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.divider),
+              labelStyle: TextStyle(color: context.onSurface),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: context.divider),
               ),
               focusedBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: AppColors.primary),
@@ -2998,7 +2998,7 @@ class _AddReferencePanelState extends State<_AddReferencePanel> with WidgetsBind
                 },
               ),
             ),
-            style: const TextStyle(color: AppColors.onBackground),
+            style: TextStyle(color: context.onBackground),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
@@ -3092,7 +3092,7 @@ class _PlateCalculatorDialogState extends State<_PlateCalculatorDialog> {
     final sideWeight = (_totalWeight - _barWeight) / 2.0;
 
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
         children: [
@@ -3109,9 +3109,9 @@ class _PlateCalculatorDialogState extends State<_PlateCalculatorDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'PESO TOTAL DESEJADO (kg)',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurface, letterSpacing: 1.0),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.onSurface, letterSpacing: 1.0),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -3137,9 +3137,9 @@ class _PlateCalculatorDialogState extends State<_PlateCalculatorDialog> {
             ),
             const SizedBox(height: 16),
 
-            const Text(
+            Text(
               'PESO DA BARRA (kg)',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurface, letterSpacing: 1.0),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.onSurface, letterSpacing: 1.0),
             ),
             const SizedBox(height: 8),
             SingleChildScrollView(
@@ -3158,9 +3158,9 @@ class _PlateCalculatorDialogState extends State<_PlateCalculatorDialog> {
                         }
                       },
                       selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
+                      backgroundColor: context.surfaceColor,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.onBackground,
+                        color: isSelected ? Colors.white : context.onBackground,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         fontSize: 12,
                       ),
@@ -3171,7 +3171,7 @@ class _PlateCalculatorDialogState extends State<_PlateCalculatorDialog> {
             ),
             const SizedBox(height: 20),
 
-            const Divider(color: AppColors.divider),
+            Divider(color: context.divider),
             const SizedBox(height: 12),
 
             if (sideWeight <= 0)
@@ -3190,7 +3190,7 @@ class _PlateCalculatorDialogState extends State<_PlateCalculatorDialog> {
                   children: [
                     Text(
                       'CADA LADO RECEBE',
-                      style: TextStyle(fontSize: 10, color: AppColors.onSurface.withOpacity(0.8), letterSpacing: 1.5),
+                      style: TextStyle(fontSize: 10, color: context.onSurface.withOpacity(0.8), letterSpacing: 1.5),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -3206,15 +3206,15 @@ class _PlateCalculatorDialogState extends State<_PlateCalculatorDialog> {
               ),
               const SizedBox(height: 20),
 
-              const Text(
+              Text(
                 'ANILHAS POR LADO:',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurface, letterSpacing: 1.0),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.onSurface, letterSpacing: 1.0),
               ),
               const SizedBox(height: 8),
               if (plates.isEmpty)
-                const Text(
+                Text(
                   'Nenhuma anilha necessária (apenas a barra).',
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.onSurface),
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: context.onSurface),
                 )
               else
                 Column(

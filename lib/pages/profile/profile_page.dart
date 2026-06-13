@@ -115,7 +115,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   void _showPhotoOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -182,16 +182,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Foto do GitHub ou URL'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Insira seu usuário do GitHub (ex: JanGustavo) ou qualquer link de imagem da internet:',
-              style: TextStyle(fontSize: 13, color: AppColors.onSurface),
+              style: TextStyle(fontSize: 13, color: context.onSurface),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -286,7 +286,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.card,
+          backgroundColor: context.cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Restaurar Backup?'),
           content: const Text(
@@ -381,9 +381,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               const SizedBox(height: 4),
                               Text(
                                 'Meta: $weeklyTarget ${weeklyTarget == 1 ? "treino" : "treinos"}/sem',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: AppColors.onSurface,
+                                  color: context.onSurface,
                                 ),
                               ),
                             ],
@@ -401,7 +401,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Row(
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
@@ -409,7 +409,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
+                                      color: context.onSurface,
                                       letterSpacing: 1.0,
                                     ),
                                   ),
@@ -431,9 +431,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               const SizedBox(height: 4),
                               Text(
                                 'Carga média desde: $firstUseDate',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: AppColors.onSurface,
+                                  color: context.onSurface,
                                 ),
                               ),
                             ],
@@ -626,7 +626,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: AppColors.divider),
+                  side: BorderSide(color: context.divider),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -664,9 +664,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 final version = snapshot.data?.version ?? '...';
                                 return Text(
                                   'Versão atual: v$version',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.onSurface,
+                                    color: context.onSurface,
                                   ),
                                 );
                               },
@@ -680,8 +680,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          backgroundColor: AppColors.surface,
-                          side: const BorderSide(color: AppColors.divider),
+                          backgroundColor: context.surfaceColor,
+                          side: BorderSide(color: context.divider),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -706,7 +706,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppColors.divider),
+                side: BorderSide(color: context.divider),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -728,7 +728,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -745,7 +745,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 'Escolha o tema visual do aplicativo',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.onSurface,
+                                  color: context.onSurface,
                                 ),
                               ),
                             ],
@@ -794,7 +794,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: AppColors.divider),
+                  side: BorderSide(color: context.divider),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -816,7 +816,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -833,7 +833,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   'Exporte ou importe seus treinos e histórico',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.onSurface,
+                                    color: context.onSurface,
                                   ),
                                 ),
                               ],
@@ -896,12 +896,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           weeklyWeightsAsync.when(
             data: (weights) {
               if (weights.isEmpty) {
-                return const SliverToBoxAdapter(
+                return SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     child: Text(
                       'Nenhum peso registrado ainda.',
-                      style: TextStyle(color: AppColors.onSurface),
+                      style: TextStyle(color: context.onSurface),
                     ),
                   ),
                 );
@@ -1001,13 +1001,13 @@ class _WeightRow extends StatelessWidget {
         side: BorderSide(
           color: isCurrentWeek
               ? AppColors.primary.withValues(alpha: 0.4)
-              : AppColors.divider,
+              : context.divider,
         ),
       ),
       child: ListTile(
         leading: Icon(
           Icons.monitor_weight_rounded,
-          color: isCurrentWeek ? AppColors.primary : AppColors.onSurface,
+          color: isCurrentWeek ? AppColors.primary : context.onSurface,
           size: 22,
         ),
         title: Text(
@@ -1019,7 +1019,7 @@ class _WeightRow extends StatelessWidget {
         subtitle: Text(WeekUtils.formatDateWithWeekday(weight.data)),
         trailing: Text(
           WeekUtils.formatWeekKey(weight.semana),
-          style: const TextStyle(color: AppColors.onSurface, fontSize: 12),
+          style: TextStyle(color: context.onSurface, fontSize: 12),
         ),
       ),
     );
